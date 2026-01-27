@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: musicstream-db
+    environment:
+      POSTGRES_DB: musicstream
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - musicstream-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: musicstream-api
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/musicstream
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    volumes:
+      - uploads_data:/app/uploads
+    networks:
+      - musicstream-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: musicstream-app
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    networks:
+      - musicstream-network
+
+volumes:
+  postgres_data:
+  uploads_data:
+
+networks:
+  musicstream-network:
+    driver: bridge
