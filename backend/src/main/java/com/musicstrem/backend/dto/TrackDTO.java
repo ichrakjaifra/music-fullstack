@@ -34,36 +34,3 @@ public class TrackDTO {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
 }
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-class CreateTrackRequest {
-    private String title;
-    private String artist;
-    private String description;
-    private MusicCategory category;
-}
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-class UpdateTrackRequest {
-    private String title;
-    private String artist;
-    private String description;
-    private MusicCategory category;
-}
-
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-class TrackStatsDTO {
-    private Long totalTracks;
-    private Long totalDuration;
-    private Long totalPlays;
-    private Long totalLikes;
-}
