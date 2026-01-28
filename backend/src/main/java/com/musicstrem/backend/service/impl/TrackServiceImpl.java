@@ -261,4 +261,9 @@ public class TrackServiceImpl implements TrackService {
         };
         return colors[(int) (Math.random() * colors.length)];
     }
+
+    @Override
+    public byte[] getAudioFile(String fileUrl) {
+        return fileStorageService.getFile(fileUrl);
+    }
 }

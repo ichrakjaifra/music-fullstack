@@ -44,4 +44,7 @@ public interface TrackService {
     Map<String, Long> getCategoryStats();
 
     TrackDTO uploadTrackImage(String id, MultipartFile imageFile);
+
+    byte[] getAudioFile(String fileUrl);
+
 }
