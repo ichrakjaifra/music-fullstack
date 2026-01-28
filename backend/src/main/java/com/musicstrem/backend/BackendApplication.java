@@ -1,4 +1,4 @@
-package org.musicstrem.backend;
+package com.musicstrem.backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

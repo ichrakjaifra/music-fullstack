@@ -1,4 +1,4 @@
-package org.musicstrem.backend.models;
+package com.musicstrem.backend.models;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -73,7 +73,3 @@ public class Track {
     private List<PlaylistTrack> playlistTracks = new ArrayList<>();
 }
 
-enum MusicCategory {
-    POP, ROCK, RAP, JAZZ, CLASSICAL, ELECTRONIC,
-    HIPHOP, RNB, COUNTRY, REGGAE, METAL, BLUES, FOLK
-}

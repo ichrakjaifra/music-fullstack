@@ -1,4 +1,4 @@
-package org.musicstrem.backend.models;
+package com.musicstrem.backend.models;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -41,28 +41,4 @@ public class Playlist {
 
     @OneToMany(mappedBy = "playlist", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PlaylistTrack> tracks = new ArrayList<>();
-}
-
-@Entity
-@Table(name = "playlist_tracks")
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-class PlaylistTrack {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "playlist_id", nullable = false)
-    private Playlist playlist;
-
-    @ManyToOne
-    @JoinColumn(name = "track_id", nullable = false)
-    private Track track;
-
-    @Column(name = "position")
-    private Integer position;
 }

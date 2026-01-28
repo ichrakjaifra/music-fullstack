@@ -1,4 +1,4 @@
-package org.musicstrem.backend;
+package com.musicstrem.backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
