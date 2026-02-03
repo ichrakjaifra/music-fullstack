@@ -4,7 +4,7 @@ import { Router, NavigationEnd, RouterModule } from '@angular/router';
 import { Subscription, filter } from 'rxjs';
 import { AudioPlayerService } from './core/services/audio-player.service';
 import { TrackService } from './core/services/track.service';
-import { AudioPlayerComponent } from './shared/components/audio-player/audio-player.component';
+import { AudioPlayerComponent } from './shared/components/audio-player/audio-player';
 import { TrackApiService } from './core/services/track-api.service';
 
 @Component({
@@ -18,14 +18,14 @@ export class AppComponent implements OnInit, OnDestroy {
   title = 'music-stream';
 
   // État de l'application
-  currentRoute = signal('');
-  showPlayer = signal(true);
-  isLoading = signal(false);
-  storageUsage = signal(0);
+  public currentRoute = signal<string>('');
+  public showPlayer = signal<boolean>(true);
+  public isLoading = signal<boolean>(false);
+  public storageUsage = signal<number>(0);
 
   // État du lecteur
-  hasCurrentTrack = computed(() => !!this.playerService.currentTrack());
-  playerStatus = computed(() => this.playerService.status());
+  public hasCurrentTrack = computed(() => !!this.playerService.currentTrack());
+  public playerStatus = computed(() => this.playerService.status());
 
   private subscriptions: Subscription[] = [];
 
@@ -34,13 +34,7 @@ export class AppComponent implements OnInit, OnDestroy {
     public playerService: AudioPlayerService,
     private trackService: TrackService,
     private trackApiService: TrackApiService  // Service API ajouté
-  ) {
-    // Utiliser effect pour suivre isLoading
-    effect(() => {
-      const isLoading = this.trackService.isLoading();
-      this.isLoading.set(isLoading);
-    });
-  }
+  ) { }
 
   ngOnInit(): void {
     // Suivre la navigation
@@ -52,6 +46,13 @@ export class AppComponent implements OnInit, OnDestroy {
     });
 
     this.subscriptions.push(routerSub);
+
+    // Subscribe to loading state
+    this.subscriptions.push(
+      this.trackService.isLoading.subscribe(isLoading => {
+        this.isLoading.set(isLoading);
+      })
+    );
 
     // Restaurer l'état du lecteur
     setTimeout(() => {
@@ -77,23 +78,23 @@ export class AppComponent implements OnInit, OnDestroy {
     this.router.navigate([route]);
   }
 
-  scrollToTop(): void {
+  public scrollToTop(): void {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // ============ PLAYER CONTROLS ============
 
-  togglePlayer(): void {
+  public togglePlayer(): void {
     this.showPlayer.update(show => !show);
   }
 
-  minimizePlayer(): void {
+  public minimizePlayer(): void {
     this.showPlayer.set(false);
   }
 
   // ============ APP ACTIONS ============
 
-  refreshLibrary(): void {
+  public refreshLibrary(): void {
     // Utiliser le service API pour rafraîchir
     this.trackApiService.refreshTracks().subscribe({
       next: () => {
@@ -105,21 +106,9 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  exportData(): void {
+  public exportData(): void {
     // Avec API, on ne peut plus exporter localement
     console.warn('Export via API non implémenté - Utilisez les endpoints backend');
-
-    // Option: Créer un endpoint d'export dans le backend et l'appeler ici
-    // this.trackApiService.exportData().subscribe(blob => {
-    //   const url = URL.createObjectURL(blob);
-    //   const a = document.createElement('a');
-    //   a.href = url;
-    //   a.download = `music-stream-backup-${new Date().toISOString().split('T')[0]}.json`;
-    //   document.body.appendChild(a);
-    //   a.click();
-    //   document.body.removeChild(a);
-    //   URL.revokeObjectURL(url);
-    // });
   }
 
   // ============ UTILITY FUNCTIONS ============

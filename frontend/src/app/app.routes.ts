@@ -8,12 +8,12 @@ export const routes: Routes = [
   },
   {
     path: 'library',
-    loadComponent: () => import('./features/library/library.component')
+    loadComponent: () => import('./features/library/library')
       .then(m => m.LibraryComponent)
   },
   {
     path: 'track/:id',
-    loadComponent: () => import('./features/track-detail/track-detail.component')
+    loadComponent: () => import('./features/track-detail/track-detail')
       .then(m => m.TrackDetailComponent)
   },
   {

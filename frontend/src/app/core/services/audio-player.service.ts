@@ -109,8 +109,18 @@ export class AudioPlayerService {
   private setupEffects(): void {
     // Synchroniser le volume
     effect(() => {
-      this.audioElement.volume = this.volumeSignal();
-      localStorage.setItem('music-stream-volume', this.volumeSignal().toString());
+      try {
+        const vol = this.volumeSignal();
+        if (isFinite(vol) && vol >= 0 && vol <= 1) {
+          this.audioElement.volume = vol;
+          localStorage.setItem('music-stream-volume', vol.toString());
+        } else {
+          // Reset to default if invalid
+          this.volumeSignal.set(0.7);
+        }
+      } catch (e) {
+        console.error('Error setting volume:', e);
+      }
     });
 
     // Synchroniser le mute
@@ -214,6 +224,14 @@ export class AudioPlayerService {
   setVolume(volume: number): void {
     const clampedVolume = Math.max(0, Math.min(1, volume));
     this.volumeSignal.set(clampedVolume);
+  }
+
+  increaseVolume(): void {
+    this.setVolume(this.volumeSignal() + 0.1);
+  }
+
+  decreaseVolume(): void {
+    this.setVolume(this.volumeSignal() - 0.1);
   }
 
   toggleMute(): void {
@@ -406,5 +424,35 @@ export class AudioPlayerService {
     }
 
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+
+  saveState(): void {
+    const state = {
+      volume: this.volumeSignal(),
+      isMuted: this.isMutedSignal(),
+      isShuffled: this.isShuffledSignal(),
+      isRepeating: this.isRepeatingSignal(),
+      queue: this.queueSignal(),
+      currentIndex: this.currentIndexSignal(),
+      currentTrack: this.currentTrackSignal()
+    };
+    localStorage.setItem('music-stream-player-state', JSON.stringify(state));
+  }
+
+  restoreState(): void {
+    const saved = localStorage.getItem('music-stream-player-state');
+    if (saved) {
+      try {
+        const state = JSON.parse(saved);
+
+        this.volumeSignal.set(state.volume || 0.7);
+        this.isMutedSignal.set(state.isMuted || false);
+        this.isShuffledSignal.set(state.isShuffled || false);
+        this.isRepeatingSignal.set(state.isRepeating || false);
+
+      } catch (error) {
+        console.error('Error restoring player state:', error);
+      }
+    }
   }
 }

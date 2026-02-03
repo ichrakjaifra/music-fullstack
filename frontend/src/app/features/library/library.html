@@ -54,12 +54,14 @@
 
             <div class="dropdown">
               <button class="btn btn-outline-secondary dropdown-toggle"
-                      data-bs-toggle="dropdown">
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false">
                 <i class="bi bi-sliders"></i>
               </button>
               <div class="dropdown-menu dropdown-menu-end">
                 <button class="dropdown-item" (click)="toggleViewMode()">
-                  <i class="bi bi-{{ viewMode() === 'grid' ? 'list' : 'grid' }} me-2"></i>
+                  <i [class]="viewMode() === 'grid' ? 'bi bi-list me-2' : 'bi bi-grid me-2'"></i>
                   Vue {{ viewMode() === 'grid' ? 'liste' : 'grille' }}
                 </button>
                 <button class="dropdown-item" (click)="toggleStats()">
@@ -98,7 +100,7 @@
                       (click)="onCategoryChange(category)">
                 {{ category === 'all' ? 'Toutes' : (category | titlecase) }}
                 <span *ngIf="category !== 'all'" class="badge bg-dark ms-1">
-                  {{ stats().byCategory[category] || 0 }}
+                  {{ (stats().byCategory[category] || 0) }}
                 </span>
               </button>
             </div>
@@ -113,33 +115,35 @@
             <div class="sort-controls">
               <div class="btn-group" role="group">
                 <button class="btn btn-outline-secondary dropdown-toggle"
-                        data-bs-toggle="dropdown">
-                  <i class="bi bi-sort-{{ sortOrder() === 'asc' ? 'up' : 'down' }}-alt me-1"></i>
-                  {{ sortBy() | titlecase }}
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                  <i [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + '-alt me-1'"></i>
+                  {{ getSortByLabel() }}
                 </button>
                 <div class="dropdown-menu dropdown-menu-end">
                   <button class="dropdown-item" (click)="onSortChange(SortBy.TITLE)">
-                    <i class="bi bi-sort-alpha-{{ sortOrder() === 'asc' ? 'down' : 'up' }} me-2"></i>
+                    <i [class]="'bi bi-sort-alpha-' + (sortOrder() === 'asc' ? 'down' : 'up') + ' me-2'"></i>
                     Titre
                   </button>
                   <button class="dropdown-item" (click)="onSortChange(SortBy.ARTIST)">
-                    <i class="bi bi-sort-alpha-{{ sortOrder() === 'asc' ? 'down' : 'up' }} me-2"></i>
+                    <i [class]="'bi bi-sort-alpha-' + (sortOrder() === 'asc' ? 'down' : 'up') + ' me-2'"></i>
                     Artiste
                   </button>
                   <button class="dropdown-item" (click)="onSortChange(SortBy.DATE)">
-                    <i class="bi bi-sort-{{ sortOrder() === 'asc' ? 'down' : 'up' }} me-2"></i>
+                    <i [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'down' : 'up') + ' me-2'"></i>
                     Date
                   </button>
                   <button class="dropdown-item" (click)="onSortChange(SortBy.DURATION)">
-                    <i class="bi bi-sort-{{ sortOrder() === 'asc' ? 'down' : 'up' }} me-2"></i>
+                    <i [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'down' : 'up') + ' me-2'"></i>
                     Durée
                   </button>
                   <button class="dropdown-item" (click)="onSortChange(SortBy.PLAYS)">
-                    <i class="bi bi-sort-{{ sortOrder() === 'asc' ? 'down' : 'up' }} me-2"></i>
+                    <i [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'down' : 'up') + ' me-2'"></i>
                     Lectures
                   </button>
                   <button class="dropdown-item" (click)="onSortChange(SortBy.LIKES)">
-                    <i class="bi bi-sort-{{ sortOrder() === 'asc' ? 'down' : 'up' }} me-2"></i>
+                    <i [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'down' : 'up') + ' me-2'"></i>
                     Likes
                   </button>
                 </div>
@@ -173,15 +177,15 @@
               <div class="btn-group">
                 <button class="btn btn-outline-secondary btn-sm"
                         (click)="prevPage()"
-                        [disabled]="currentPage() === 1">
+                        [disabled]="currentPage() === 0">
                   <i class="bi bi-chevron-left"></i>
                 </button>
                 <span class="btn btn-outline-secondary btn-sm disabled">
-                  {{ currentPage() }} / {{ totalPages() }}
+                  {{ currentPage() + 1 }} / {{ totalPages() }}
                 </span>
                 <button class="btn btn-outline-secondary btn-sm"
                         (click)="nextPage()"
-                        [disabled]="currentPage() === totalPages()">
+                        [disabled]="currentPage() === totalPages() - 1">
                   <i class="bi bi-chevron-right"></i>
                 </button>
               </div>
@@ -193,7 +197,7 @@
   </div>
 
   <!-- État de chargement -->
-  <div *ngIf="isLoading()" class="loading-state text-center py-5">
+  <div *ngIf="loading()" class="loading-state text-center py-5">
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Chargement...</span>
     </div>
@@ -201,19 +205,19 @@
   </div>
 
   <!-- État d'erreur -->
-  <div *ngIf="error() && !isLoading()" class="error-state">
+  <div *ngIf="error() && !loading()" class="error-state">
     <div class="alert alert-danger">
       <i class="bi bi-exclamation-triangle me-2"></i>
       {{ error() }}
       <button class="btn btn-sm btn-outline-danger ms-2"
-              (click)="trackService.loadTracks()">
+              (click)="store.dispatch(TrackActions.loadTracks({ page: 0 }))">
         Réessayer
       </button>
     </div>
   </div>
 
   <!-- Bibliothèque vide -->
-  <div *ngIf="!isLoading() && !error() && tracks().length === 0" class="empty-state text-center py-5">
+  <div *ngIf="!loading() && !error() && tracks().length === 0" class="empty-state text-center py-5">
     <i class="bi bi-music-note-beamed display-1 text-muted mb-3"></i>
     <h3 class="mb-3">Bibliothèque vide</h3>
     <p class="text-muted mb-4">
@@ -241,7 +245,7 @@
   </div>
 
   <!-- Contenu principal -->
-  <div *ngIf="!isLoading() && !error() && tracks().length > 0" class="library-content animate-fade-in">
+  <div *ngIf="!loading() && !error() && tracks().length > 0" class="library-content animate-fade-in">
 
     <!-- Vue Grille -->
     <div *ngIf="viewMode() === 'grid'" class="grid-view">
@@ -278,22 +282,22 @@
             <th (click)="onSortChange(SortBy.TITLE)">
               Titre
               <i *ngIf="sortBy() === SortBy.TITLE"
-                 class="bi bi-sort-{{ sortOrder() === 'asc' ? 'up' : 'down' }} ms-1"></i>
+                 [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
             </th>
             <th (click)="onSortChange(SortBy.ARTIST)">
               Artiste
               <i *ngIf="sortBy() === SortBy.ARTIST"
-                 class="bi bi-sort-{{ sortOrder() === 'asc' ? 'up' : 'down' }} ms-1"></i>
+                 [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
             </th>
             <th (click)="onSortChange(SortBy.DATE)">
               Date
               <i *ngIf="sortBy() === SortBy.DATE"
-                 class="bi bi-sort-{{ sortOrder() === 'asc' ? 'up' : 'down' }} ms-1"></i>
+                 [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
             </th>
             <th (click)="onSortChange(SortBy.DURATION)">
               Durée
               <i *ngIf="sortBy() === SortBy.DURATION"
-                 class="bi bi-sort-{{ sortOrder() === 'asc' ? 'up' : 'down' }} ms-1"></i>
+                 [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
             </th>
             <th>Catégorie</th>
             <th>Statistiques</th>
@@ -333,7 +337,7 @@
 
             <td>
                 <span class="table-date">
-                  {{ track.addedDate | date:'dd/MM/yyyy' }}
+                  {{ track.createdAt | date:'dd/MM/yyyy' }}
                 </span>
             </td>
 
@@ -391,7 +395,7 @@
     <div *ngIf="totalPages() > 1" class="pagination-bottom mt-4">
       <nav aria-label="Navigation des pages">
         <ul class="pagination justify-content-center">
-          <li class="page-item" [class.disabled]="currentPage() === 1">
+          <li class="page-item" [class.disabled]="currentPage() === 0">
             <a class="page-link" (click)="prevPage()" aria-label="Précédent">
               <i class="bi bi-chevron-left"></i>
             </a>
@@ -399,13 +403,13 @@
 
           <li *ngFor="let page of getPagesArray()"
               class="page-item"
-              [class.active]="currentPage() === page">
-            <a class="page-link" (click)="goToPage(page)">
+              [class.active]="currentPage() + 1 === page">
+            <a class="page-link" (click)="goToPage(page - 1)">
               {{ page }}
             </a>
           </li>
 
-          <li class="page-item" [class.disabled]="currentPage() === totalPages()">
+          <li class="page-item" [class.disabled]="currentPage() === totalPages() - 1">
             <a class="page-link" (click)="nextPage()" aria-label="Suivant">
               <i class="bi bi-chevron-right"></i>
             </a>

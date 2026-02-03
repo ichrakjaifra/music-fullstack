@@ -1,7 +1,14 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpErrorResponse,
+  HttpParams,
+  HttpEventType,
+  HttpEvent,
+  HttpResponse
+} from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map, filter } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { ApiResponse, PaginatedResponse } from '../models/api-response.model';
 
@@ -11,18 +18,18 @@ import { ApiResponse, PaginatedResponse } from '../models/api-response.model';
 export class ApiService {
   private readonly apiUrl = environment.apiUrl;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   // GET request
-  get<T>(endpoint: string, params?: any): Observable<ApiResponse<T>> {
-    return this.http.get<ApiResponse<T>>(`${this.apiUrl}${endpoint}`, {
+  get<T>(endpoint: string, params?: any): Observable<T> {
+    return this.http.get<T>(`${this.apiUrl}${endpoint}`, {
       params: new HttpParams({ fromObject: params })
     }).pipe(
       catchError(this.handleError)
     );
   }
 
-  // GET with pagination
+  // GET avec pagination
   getPaginated<T>(endpoint: string, page: number = 0, size: number = 20, params?: any): Observable<PaginatedResponse<T>> {
     let httpParams = new HttpParams()
       .set('page', page.toString())
@@ -44,49 +51,67 @@ export class ApiService {
   }
 
   // POST request
-  post<T>(endpoint: string, data: any, options?: any): Observable<ApiResponse<T>> {
-    return this.http.post<ApiResponse<T>>(`${this.apiUrl}${endpoint}`, data, options)
+  post<T>(endpoint: string, data: any, options?: any): Observable<T> {
+    return this.http.post<T>(`${this.apiUrl}${endpoint}`, data, options)
+      .pipe(
+        catchError(this.handleError)
+      ) as Observable<T>;
+  }
+
+  // PUT request
+  put<T>(endpoint: string, data: any): Observable<T> {
+    return this.http.put<T>(`${this.apiUrl}${endpoint}`, data)
       .pipe(
         catchError(this.handleError)
       );
   }
 
-  // PUT request
-  put<T>(endpoint: string, data: any): Observable<ApiResponse<T>> {
-    return this.http.put<ApiResponse<T>>(`${this.apiUrl}${endpoint}`, data)
+  // PATCH request
+  patch<T>(endpoint: string, data: any): Observable<T> {
+    return this.http.patch<T>(`${this.apiUrl}${endpoint}`, data)
       .pipe(
         catchError(this.handleError)
       );
   }
 
   // DELETE request
-  delete<T>(endpoint: string): Observable<ApiResponse<T>> {
-    return this.http.delete<ApiResponse<T>>(`${this.apiUrl}${endpoint}`)
+  delete<T>(endpoint: string): Observable<T> {
+    return this.http.delete<T>(`${this.apiUrl}${endpoint}`)
       .pipe(
         catchError(this.handleError)
       );
   }
 
-  // Upload file
-  uploadFile<T>(endpoint: string, file: File, data?: any): Observable<ApiResponse<T>> {
-    const formData = new FormData();
+  // Upload file avec progression - Option 1: Retourne seulement la réponse finale
+  uploadFile<T>(endpoint: string, formData: FormData): Observable<T> {
+    return this.http.post(`${this.apiUrl}${endpoint}`, formData, {
+      reportProgress: true,
+      observe: 'events'
+    }).pipe(
+      filter((event: HttpEvent<any>): event is HttpResponse<T> => event.type === HttpEventType.Response),
+      map((event: HttpResponse<T>) => event.body as T),
+      catchError(this.handleError)
+    ) as Observable<T>;
+  }
 
-    if (file) {
-      formData.append('file', file, file.name);
-    }
+  // Upload file avec progression complète - Option 2: Retourne tous les événements
+  uploadFileWithProgress<T>(endpoint: string, formData: FormData): Observable<HttpEvent<T>> {
+    return this.http.post<T>(`${this.apiUrl}${endpoint}`, formData, {
+      reportProgress: true,
+      observe: 'events'
+    }).pipe(
+      catchError(this.handleError)
+    );
+  }
 
-    if (data) {
-      Object.keys(data).forEach(key => {
-        if (data[key] !== null && data[key] !== undefined) {
-          formData.append(key, data[key]);
-        }
-      });
-    }
-
-    return this.http.post<ApiResponse<T>>(`${this.apiUrl}${endpoint}`, formData)
-      .pipe(
-        catchError(this.handleError)
-      );
+  // Download file
+  downloadFile(endpoint: string, params?: any): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}${endpoint}`, {
+      params: new HttpParams({ fromObject: params }),
+      responseType: 'blob'
+    }).pipe(
+      catchError(this.handleError)
+    );
   }
 
   // Error handler
@@ -106,10 +131,43 @@ export class ApiService {
         errorMessage = 'Ressource non trouvée';
       } else if (error.status === 500) {
         errorMessage = 'Erreur interne du serveur';
+      } else if (error.status === 401) {
+        errorMessage = 'Non autorisé. Veuillez vous reconnecter.';
+      } else if (error.status === 403) {
+        errorMessage = 'Accès interdit';
+      } else if (error.status === 400) {
+        errorMessage = 'Requête invalide';
+      } else if (error.status === 422) {
+        errorMessage = 'Données invalides';
+      } else if (error.status === 409) {
+        errorMessage = 'Conflit de données';
       }
     }
 
     console.error('API Error:', error);
     return throwError(() => new Error(errorMessage));
+  }
+
+  // Méthode utilitaire pour construire des query params
+  buildQueryParams(params: any): HttpParams {
+    let httpParams = new HttpParams();
+
+    if (params) {
+      Object.keys(params).forEach(key => {
+        const value = params[key];
+        if (value !== null && value !== undefined && value !== '') {
+          if (Array.isArray(value)) {
+            // Pour les tableaux, ajouter chaque valeur
+            value.forEach(item => {
+              httpParams = httpParams.append(key, item.toString());
+            });
+          } else {
+            httpParams = httpParams.set(key, value.toString());
+          }
+        }
+      });
+    }
+
+    return httpParams;
   }
 }

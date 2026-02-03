@@ -1,19 +1,22 @@
-import { Component, OnInit, OnDestroy, signal, computed, viewChild, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, computed, inject, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { Subscription, debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { Store } from '@ngrx/store';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { Track, MusicCategory } from '../../core/models/track.model';
 import { SortBy, SortOrder } from '../../core/models/player-state.enum';
-import { TrackService } from '../../core/services/track.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
-import { TrackCardComponent } from '../../shared/components/track-card/track-card.component';
-import { TrackFormComponent } from '../../shared/components/track-form/track-form.component';
-import { DurationPipe } from '../../shared/pipes/duration.pipe';
-import { FileSizePipe } from '../../shared/pipes/file-size.pipe';
-import { SearchFilterPipe } from '../../shared/pipes/search-filter.pipe';
-import { DragDropDirective } from '../../shared/directives/drag-drop.directive';
-import { TrackApiService } from '../../core/services/track-api.service'; // AJOUTÉ
+import { TrackCardComponent } from '../../shared/components/track-card/track-card';
+import { TrackFormComponent } from '../../shared/components/track-form/track-form';
+import { DurationPipe } from '../../shared/pipes/duration-pipe';
+import { FileSizePipe } from '../../shared/pipes/file-size-pipe';
+import { SearchFilterPipe } from '../../shared/pipes/search-filter-pipe';
+import { DragDropDirective } from '../../shared/directives/drag-drop';
+import { AppState } from '../../core/store/app.state';
+import * as TrackActions from '../../core/store/track/track.actions';
+import * as TrackSelectors from '../../core/store/track/track.selectors';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-library',
@@ -25,77 +28,293 @@ import { TrackApiService } from '../../core/services/track-api.service'; // AJOU
     TrackCardComponent,
     TrackFormComponent,
     DurationPipe,
-    FileSizePipe,
-    SearchFilterPipe,
     DragDropDirective
   ],
-  templateUrl: 'library.component.html',
-  styleUrls: ['library.component.css']
+  templateUrl: './library.html',
+  styleUrls: ['./library.css']
 })
 export class LibraryComponent implements OnInit, OnDestroy {
-  // View Children
-  trackForm = viewChild.required(TrackFormComponent);
+  // Injections
+  public store = inject(Store<AppState>);
+  private destroyRef = inject(DestroyRef);
+  public playerService = inject(AudioPlayerService);
+  private router = inject(Router);
 
-  // État local
+  protected readonly TrackActions = TrackActions;
+
+  // Observables depuis le store
+  private tracks$ = this.store.select(TrackSelectors.selectFilteredTracks);
+  private loading$ = this.store.select(TrackSelectors.selectTrackLoading);
+  private error$ = this.store.select(TrackSelectors.selectTrackError);
+  private categories$ = this.store.select(TrackSelectors.selectCategories);
+  private stats$ = this.store.select(TrackSelectors.selectTrackStats);
+  private categoryStats$ = this.store.select(TrackSelectors.selectCategoryStats);
+  private currentPage$ = this.store.select(TrackSelectors.selectCurrentPage);
+  private totalPages$ = this.store.select(TrackSelectors.selectTotalPages);
+  private totalElements$ = this.store.select(TrackSelectors.selectTotalElements);
+  private searchQuery$ = this.store.select(TrackSelectors.selectSearchQuery);
+  private selectedCategory$ = this.store.select(TrackSelectors.selectSelectedCategory);
+
+  // Signaux pour l'UI
   showForm = signal(false);
   editingTrack = signal<Track | null>(null);
   selectedTracks = signal<Set<string>>(new Set());
   viewMode = signal<'grid' | 'list'>('grid');
   searchTerm = signal('');
-  selectedCategory = signal('all');
   sortBy = signal<SortBy>(SortBy.DATE);
   sortOrder = signal<SortOrder>(SortOrder.DESC);
   isDragging = signal(false);
   showStats = signal(false);
   showImportExport = signal(false);
-
-  // Pagination
-  currentPage = signal(0); // MODIFIÉ: API utilise l'index 0
   itemsPerPage = signal(12);
 
-  // Subjects pour la recherche
-  private searchSubject = new Subject<string>();
-
-  // Signaux pour les données API
-  private tracksFromApi = signal<Track[]>([]); // AJOUTÉ
-  private totalPagesFromApi = signal<number>(0); // AJOUTÉ
-  private totalElementsFromApi = signal<number>(0); // AJOUTÉ
-
-  // État depuis les services
-  tracks = this.tracksFromApi; // MODIFIÉ
-  isLoading = this.trackService.isLoading;
-  error = this.trackService.error;
-  categories = this.trackService.categories;
-  stats = this.trackService.stats;
+  // Signaux pour les données
+  tracks = signal<Track[]>([]);
+  loading = signal(false);
+  error = signal('');
+  categories = signal<string[]>(['all']);
+  stats = signal({
+    totalTracks: 0,
+    totalDuration: 0,
+    totalPlays: 0,
+    totalLikes: 0,
+    byCategory: {} as Record<string, number>
+  });
+  currentPage = signal(0);
+  totalPages = signal(0);
+  totalElements = signal(0);
+  selectedCategory = signal('all');
 
   // État du lecteur
   currentPlayingId = computed(() => this.playerService.currentTrack()?.id);
   isPlaying = computed(() => this.playerService.status() === 'playing');
 
-  // Computed values
-  filteredTracks = computed(() => {
-    let filtered = [...this.tracks()];
+  // Signaux locaux pour les données triées
+  filteredTracks = signal<Track[]>([]);
 
-    // Recherche côté client (temporaire)
-    if (this.searchTerm()) {
-      filtered = filtered.filter(track =>
-        track.title.toLowerCase().includes(this.searchTerm().toLowerCase()) ||
-        track.artist.toLowerCase().includes(this.searchTerm().toLowerCase()) ||
-        track.description?.toLowerCase().includes(this.searchTerm().toLowerCase()) ||
-        track.category.toLowerCase().includes(this.searchTerm().toLowerCase())
+  // Subjects pour la recherche
+  private searchSubject = new Subject<string>();
+
+  // Définir SortBy et SortOrder comme propriétés publiques pour le template
+  readonly SortBy = SortBy;
+  readonly SortOrder = SortOrder;
+
+  ngOnInit(): void {
+    // Setup search avec debounce
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(term => {
+      this.searchTerm.set(term);
+      this.currentPage.set(0);
+
+      if (term.trim()) {
+        this.store.dispatch(TrackActions.searchTracks({ query: term }));
+      } else {
+        this.store.dispatch(TrackActions.loadTracks({ page: 0 }));
+      }
+    });
+
+    // S'abonner aux observables du store
+    this.setupStoreSubscriptions();
+
+    // Charger les tracks initiales
+    this.store.dispatch(TrackActions.loadTracks({ page: 0 }));
+    this.store.dispatch(TrackActions.loadTrackStats());
+    this.store.dispatch(TrackActions.loadCategoryStats());
+
+    // Restaurer les préférences
+    this.restorePreferences();
+  }
+
+  ngOnDestroy(): void {
+    this.savePreferences();
+  }
+
+  private setupStoreSubscriptions(): void {
+    this.tracks$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(tracks => {
+        this.tracks.set(tracks);
+        this.filteredTracks.set(this.sortTracks(tracks));
+      });
+
+    this.loading$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(loading => this.loading.set(loading));
+
+    this.error$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(error => this.error.set(error || ''));
+
+    this.categories$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(categories => this.categories.set(['all', ...categories]));
+
+    this.stats$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(stats => {
+        if (stats) {
+          this.stats.set({
+            totalTracks: stats.totalTracks,
+            totalDuration: stats.totalDuration,
+            totalPlays: stats.totalPlays,
+            totalLikes: stats.totalLikes,
+            byCategory: {}
+          });
+        }
+      });
+
+    this.categoryStats$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(categoryStats => {
+        if (categoryStats) {
+          this.stats.update(s => ({
+            ...s,
+            byCategory: categoryStats
+          }));
+        }
+      });
+
+    this.currentPage$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(page => this.currentPage.set(page));
+
+    this.totalPages$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(totalPages => this.totalPages.set(totalPages));
+
+    this.totalElements$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(totalElements => this.totalElements.set(totalElements));
+
+    this.selectedCategory$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(category => this.selectedCategory.set(category));
+  }
+
+  // ============ TRACK ACTIONS ============
+
+  onPlayTrack(track: Track): void {
+    const currentTrack = this.playerService.currentTrack();
+
+    if (currentTrack?.id === track.id && this.isPlaying()) {
+      this.playerService.pause();
+    } else if (currentTrack?.id === track.id && !this.isPlaying()) {
+      this.playerService.play();
+    } else {
+      this.playerService.setQueue([track], 0);
+      this.playerService.play();
+    }
+  }
+
+  onDeleteTrack(track: Track): void {
+    if (confirm(`Supprimer "${track.title}" ? Cette action est irréversible.`)) {
+      this.store.dispatch(TrackActions.deleteTrack({ id: track.id }));
+
+      // Si la piste supprimée est en cours de lecture, arrêter la lecture
+      if (this.playerService.currentTrack()?.id === track.id) {
+        this.playerService.stop();
+      }
+
+      // Retirer de la sélection
+      const selected = new Set(this.selectedTracks());
+      selected.delete(track.id);
+      this.selectedTracks.set(selected);
+    }
+  }
+
+  onLikeTrack(track: Track): void {
+    this.store.dispatch(TrackActions.likeTrack({ id: track.id }));
+  }
+
+  onAddToQueue(track: Track): void {
+    this.playerService.addToQueue(track);
+  }
+
+  onPauseTrack(): void {
+    this.playerService.pause();
+  }
+
+  onEditTrack(track: Track): void {
+    this.editingTrack.set(track);
+    this.showForm.set(true);
+  }
+
+  // ============ FORM HANDLING ============
+
+  onTrackSubmit(event: {
+    trackData: Partial<Track>;
+    audioFile: File;
+    imageFile?: File;
+  }): void {
+    const createRequest = {
+      title: event.trackData.title!,
+      artist: event.trackData.artist!,
+      description: event.trackData.description,
+      category: event.trackData.category as MusicCategory
+    };
+
+    this.store.dispatch(TrackActions.createTrack({
+      trackData: createRequest,
+      audioFile: event.audioFile,
+      imageFile: event.imageFile
+    }));
+
+    this.showForm.set(false);
+    this.editingTrack.set(null);
+  }
+
+  onFormCancel(): void {
+    this.showForm.set(false);
+    this.editingTrack.set(null);
+  }
+
+  // ============ SEARCH & FILTER ============
+
+  onSearchInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.searchSubject.next(input.value);
+  }
+
+  clearSearch(): void {
+    this.searchTerm.set('');
+    this.searchSubject.next('');
+    this.store.dispatch(TrackActions.loadTracks({ page: 0 }));
+  }
+
+  onCategoryChange(category: string): void {
+    this.selectedCategory.set(category);
+    this.currentPage.set(0);
+
+    if (category === 'all') {
+      this.store.dispatch(TrackActions.loadTracks({ page: 0 }));
+    } else {
+      this.store.dispatch(TrackActions.filterTracksByCategory({ category, page: 0 }));
+    }
+  }
+
+  onSortChange(sortBy: SortBy): void {
+    if (this.sortBy() === sortBy) {
+      // Inverser l'ordre si on clique sur la même colonne
+      this.sortOrder.set(
+        this.sortOrder() === SortOrder.ASC ? SortOrder.DESC : SortOrder.ASC
       );
+    } else {
+      this.sortBy.set(sortBy);
+      this.sortOrder.set(SortOrder.DESC);
     }
 
-    // Filtrage par catégorie côté client (temporaire)
-    if (this.selectedCategory() !== 'all') {
-      filtered = filtered.filter(track => track.category === this.selectedCategory());
-    }
+    // Appliquer le tri local
+    this.filteredTracks.set(this.sortTracks(this.filteredTracks()));
+  }
 
-    // Tri côté client (temporaire)
+  private sortTracks(tracks: Track[]): Track[] {
     const sortBy = this.sortBy();
     const sortOrder = this.sortOrder();
 
-    filtered.sort((a, b) => {
+    return [...tracks].sort((a, b) => {
       let aValue: any, bValue: any;
 
       switch (sortBy) {
@@ -108,7 +327,7 @@ export class LibraryComponent implements OnInit, OnDestroy {
           bValue = b.artist.toLowerCase();
           break;
         case SortBy.DATE:
-          aValue = new Date(a.createdAt).getTime(); // MODIFIÉ: createdAt au lieu de addedDate
+          aValue = new Date(a.createdAt).getTime();
           bValue = new Date(b.createdAt).getTime();
           break;
         case SortBy.DURATION:
@@ -133,364 +352,9 @@ export class LibraryComponent implements OnInit, OnDestroy {
         return aValue < bValue ? 1 : -1;
       }
     });
-
-    return filtered;
-  });
-
-  paginatedTracks = computed(() => {
-    const startIndex = (this.currentPage()) * this.itemsPerPage(); // MODIFIÉ: currentPage() au lieu de currentPage() - 1
-    const endIndex = startIndex + this.itemsPerPage();
-    return this.filteredTracks().slice(startIndex, endIndex);
-  });
-
-  totalPages = computed(() => this.totalPagesFromApi()); // MODIFIÉ
-
-  selectedCount = computed(() => this.selectedTracks().size);
-  hasSelection = computed(() => this.selectedCount() > 0);
-
-  // Définir SortBy comme propriété publique pour le template
-  SortBy = SortBy;
-
-  private subscriptions: Subscription[] = [];
-
-  constructor(
-    public trackService: TrackService,
-    private playerService: AudioPlayerService,
-    private router: Router,
-    private trackApiService: TrackApiService  // AJOUTÉ
-  ) {}
-
-  ngOnInit(): void {
-    // Setup search avec debounce
-    const searchSub = this.searchSubject.pipe(
-      debounceTime(300),
-      distinctUntilChanged()
-    ).subscribe(term => {
-      this.searchTerm.set(term);
-      this.currentPage.set(0); // MODIFIÉ: API utilise l'index 0
-      this.loadTracks(); // AJOUTÉ: charger avec recherche
-    });
-
-    this.subscriptions.push(searchSub);
-
-    // Charger les tracks
-    this.loadTracks(); // MODIFIÉ
-
-    // Restaurer les préférences
-    this.restorePreferences();
   }
 
-  ngOnDestroy(): void {
-    this.subscriptions.forEach(sub => sub.unsubscribe());
-    this.savePreferences();
-  }
-
-  // ============ NOUVELLE MÉTHODE: loadTracks ============
-
-  private loadTracks(): void {
-    this.trackService.loadTracks(); // Garder l'ancien service pour compatibilité
-
-    if (this.searchTerm()) {
-      // Recherche via API
-      this.trackApiService.searchTracks(this.searchTerm(), this.currentPage(), this.itemsPerPage())
-        .subscribe({
-          next: (response) => {
-            this.tracksFromApi.set(response.content);
-            this.totalPagesFromApi.set(response.totalPages);
-            this.currentPage.set(response.number);
-          },
-          error: (error) => {
-            console.error('Erreur lors de la recherche:', error);
-          }
-        });
-    } else if (this.selectedCategory() !== 'all') {
-      // Filtrage par catégorie via API
-      this.trackApiService.getTracksByCategory(this.selectedCategory(), this.currentPage(), this.itemsPerPage())
-        .subscribe({
-          next: (tracks) => {
-            this.tracksFromApi.set(tracks);
-          },
-          error: (error) => {
-            console.error('Erreur lors du filtrage par catégorie:', error);
-          }
-        });
-    } else {
-      // Toutes les tracks via API
-      this.trackApiService.getAllTracks(this.currentPage(), this.itemsPerPage())
-        .subscribe({
-          next: (response) => {
-            this.tracksFromApi.set(response.content);
-            this.totalPagesFromApi.set(response.totalPages);
-            this.currentPage.set(response.number);
-          },
-          error: (error) => {
-            console.error('Erreur lors du chargement:', error);
-          }
-        });
-    }
-  }
-
-  // ============ TRACK ACTIONS ============
-
-  onPlayTrack(track: Track): void {
-    const currentTrack = this.playerService.currentTrack();
-
-    if (currentTrack?.id === track.id && this.isPlaying()) {
-      this.playerService.pause();
-    } else if (currentTrack?.id === track.id && !this.isPlaying()) {
-      this.playerService.play();
-    } else {
-      this.playerService.setQueue([track], 0);
-      this.playerService.play();
-    }
-  }
-
-  onPauseTrack(): void {
-    this.playerService.pause();
-  }
-
-  onEditTrack(track: Track): void {
-    this.editingTrack.set(track);
-    this.showForm.set(true);
-  }
-
-  async onDeleteTrack(track: Track): Promise<void> {
-    if (confirm(`Supprimer "${track.title}" ? Cette action est irréversible.`)) {
-      try {
-        // Utiliser l'API pour supprimer
-        await this.trackApiService.deleteTrack(track.id).toPromise();
-
-        // Si la piste supprimée est en cours de lecture, arrêter la lecture
-        if (this.playerService.currentTrack()?.id === track.id) {
-          this.playerService.stop();
-        }
-
-        // Retirer de la liste locale
-        this.tracksFromApi.update(tracks => tracks.filter(t => t.id !== track.id));
-
-        // Retirer de la sélection
-        const selected = new Set(this.selectedTracks());
-        selected.delete(track.id);
-        this.selectedTracks.set(selected);
-
-      } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
-      }
-    }
-  }
-
-  onAddToQueue(track: Track): void {
-    this.playerService.addToQueue(track);
-  }
-
-  async onLikeTrack(track: Track): Promise<void> {
-    try {
-      const updatedTrack = await this.trackApiService.likeTrack(track.id).toPromise();
-
-      // Mettre à jour la liste locale
-      this.tracksFromApi.update(tracks =>
-        tracks.map(t => t.id === track.id ? updatedTrack : t)
-      );
-    } catch (error) {
-      console.error('Erreur lors du like:', error);
-    }
-  }
-
-  onSelectTrack(track: Track, event?: Event): void {
-    // Vérifier si c'est un MouseEvent pour avoir accès aux propriétés
-    const mouseEvent = event as MouseEvent;
-
-    if (mouseEvent?.ctrlKey || mouseEvent?.metaKey) {
-      // Sélection multiple
-      const selected = new Set(this.selectedTracks());
-      if (selected.has(track.id)) {
-        selected.delete(track.id);
-      } else {
-        selected.add(track.id);
-      }
-      this.selectedTracks.set(selected);
-    } else if (mouseEvent?.shiftKey && this.selectedTracks().size > 0) {
-      // Sélection par plage
-      const tracks = this.filteredTracks();
-      const lastSelected = Array.from(this.selectedTracks()).pop();
-      const lastIndex = tracks.findIndex(t => t.id === lastSelected);
-      const currentIndex = tracks.findIndex(t => t.id === track.id);
-
-      const start = Math.min(lastIndex, currentIndex);
-      const end = Math.max(lastIndex, currentIndex);
-
-      const selected = new Set(this.selectedTracks());
-      for (let i = start; i <= end; i++) {
-        selected.add(tracks[i].id);
-      }
-      this.selectedTracks.set(selected);
-    } else {
-      // Sélection simple
-      const selected = new Set<string>();
-      selected.add(track.id);
-      this.selectedTracks.set(selected);
-    }
-  }
-
-  // ============ BATCH ACTIONS ============
-
-  async deleteSelectedTracks(): Promise<void> {
-    const count = this.selectedCount();
-    if (count === 0) return;
-
-    if (confirm(`Supprimer ${count} piste(s) sélectionnée(s) ?`)) {
-      const tracksToDelete = Array.from(this.selectedTracks());
-
-      for (const trackId of tracksToDelete) {
-        try {
-          await this.trackApiService.deleteTrack(trackId).toPromise();
-        } catch (error) {
-          console.error(`Erreur lors de la suppression de la piste ${trackId}:`, error);
-        }
-      }
-
-      // Recharger les tracks
-      this.loadTracks();
-      this.selectedTracks.set(new Set());
-    }
-  }
-
-  addSelectedToQueue(): void {
-    const selectedIds = Array.from(this.selectedTracks());
-    const selectedTracks = this.tracks().filter(track => selectedIds.includes(track.id));
-
-    selectedTracks.forEach(track => {
-      this.playerService.addToQueue(track);
-    });
-
-    // Afficher une notification ou feedback
-    console.log(`${selectedTracks.length} piste(s) ajoutée(s) à la file`);
-  }
-
-  playSelectedTracks(): void {
-    const selectedIds = Array.from(this.selectedTracks());
-    const selectedTracks = this.tracks().filter(track => selectedIds.includes(track.id));
-
-    if (selectedTracks.length > 0) {
-      this.playerService.setQueue(selectedTracks, 0);
-      this.playerService.play();
-    }
-  }
-
-  clearSelection(): void {
-    this.selectedTracks.set(new Set());
-  }
-
-  selectAll(): void {
-    const selected = new Set<string>();
-    this.paginatedTracks().forEach(track => {
-      selected.add(track.id);
-    });
-    this.selectedTracks.set(selected);
-  }
-
-  // ============ FORM HANDLING ============
-
-  async onTrackSubmit(event: {
-    trackData: Partial<Track>;
-    audioFile: File;
-    imageFile?: File;
-  }): Promise<void> {
-    try {
-      if (this.editingTrack()) {
-        // Mise à jour via API
-        const updateData = {
-          title: event.trackData.title!,
-          artist: event.trackData.artist!,
-          description: event.trackData.description,
-          category: event.trackData.category as MusicCategory
-        };
-
-        const updatedTrack = await this.trackApiService.updateTrack(
-          this.editingTrack()!.id,
-          updateData
-        ).toPromise();
-
-        // Mettre à jour la liste locale
-        this.tracksFromApi.update(tracks =>
-          tracks.map(t => t.id === updatedTrack.id ? updatedTrack : t)
-        );
-      } else {
-        // Création via API
-        const formData = new FormData();
-        formData.append('audioFile', event.audioFile);
-
-        if (event.imageFile) {
-          formData.append('imageFile', event.imageFile);
-        }
-
-        // Ajouter les données de la piste
-        formData.append('title', event.trackData.title!);
-        formData.append('artist', event.trackData.artist!);
-        formData.append('category', event.trackData.category!);
-        if (event.trackData.description) {
-          formData.append('description', event.trackData.description);
-        }
-
-        const newTrack = await this.trackApiService.createTrack(formData).toPromise();
-
-        // Ajouter à la liste locale
-        this.tracksFromApi.update(tracks => [...tracks, newTrack]);
-      }
-
-      this.showForm.set(false);
-      this.editingTrack.set(null);
-
-      // Recharger pour avoir les données fraîches
-      this.loadTracks();
-    } catch (error) {
-      console.error('Erreur lors de l\'enregistrement:', error);
-    }
-  }
-
-  onFormCancel(): void {
-    this.showForm.set(false);
-    this.editingTrack.set(null);
-  }
-
-  openAddForm(): void {
-    this.editingTrack.set(null);
-    this.showForm.set(true);
-  }
-
-  // ============ SEARCH & FILTER ============
-
-  onSearchInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.searchSubject.next(input.value);
-  }
-
-  clearSearch(): void {
-    this.searchTerm.set('');
-    this.searchSubject.next('');
-    this.currentPage.set(0);
-    this.loadTracks();
-  }
-
-  onCategoryChange(category: string): void {
-    this.selectedCategory.set(category);
-    this.currentPage.set(0);
-    this.loadTracks();
-  }
-
-  onSortChange(sortBy: SortBy): void {
-    if (this.sortBy() === sortBy) {
-      // Inverser l'ordre si on clique sur la même colonne
-      this.sortOrder.set(
-        this.sortOrder() === SortOrder.ASC ? SortOrder.DESC : SortOrder.ASC
-      );
-    } else {
-      this.sortBy.set(sortBy);
-      this.sortOrder.set(SortOrder.DESC);
-    }
-  }
-
-  // ============ VIEW CONTROLS ============
+  // ============ UI CONTROLS ============
 
   toggleViewMode(): void {
     this.viewMode.set(this.viewMode() === 'grid' ? 'list' : 'grid');
@@ -504,29 +368,38 @@ export class LibraryComponent implements OnInit, OnDestroy {
     this.showImportExport.set(!this.showImportExport());
   }
 
-  // ============ PAGINATION MODIFIÉE ============
+  openAddForm(): void {
+    this.editingTrack.set(null);
+    this.showForm.set(true);
+  }
+
+  // ============ PAGINATION ============
 
   goToPage(page: number): void {
-    if (page >= 0 && page < this.totalPages()) {
-      this.currentPage.set(page);
-      this.loadTracks();
-      this.scrollToTop();
+    const currentCategory = this.selectedCategory();
+
+    if (currentCategory === 'all') {
+      this.store.dispatch(TrackActions.loadTracks({ page }));
+    } else {
+      this.store.dispatch(TrackActions.filterTracksByCategory({
+        category: currentCategory,
+        page
+      }));
     }
+
+    this.currentPage.set(page);
+    this.scrollToTop();
   }
 
   nextPage(): void {
     if (this.currentPage() < this.totalPages() - 1) {
-      this.currentPage.update(page => page + 1);
-      this.loadTracks();
-      this.scrollToTop();
+      this.goToPage(this.currentPage() + 1);
     }
   }
 
   prevPage(): void {
     if (this.currentPage() > 0) {
-      this.currentPage.update(page => page - 1);
-      this.loadTracks();
-      this.scrollToTop();
+      this.goToPage(this.currentPage() - 1);
     }
   }
 
@@ -550,6 +423,53 @@ export class LibraryComponent implements OnInit, OnDestroy {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  // ============ COMPUTED VALUES ============
+
+  paginatedTracks = computed(() => {
+    const startIndex = this.currentPage() * this.itemsPerPage();
+    const endIndex = startIndex + this.itemsPerPage();
+    return this.filteredTracks().slice(startIndex, endIndex);
+  });
+
+  selectedCount = computed(() => this.selectedTracks().size);
+  hasSelection = computed(() => this.selectedCount() > 0);
+
+  // ============ SELECTION ACTIONS ============
+
+  onSelectTrack(track: Track, event?: Event): void {
+    event?.stopPropagation();
+
+    const mouseEvent = event as MouseEvent;
+
+    if (mouseEvent?.ctrlKey || mouseEvent?.metaKey) {
+      // Sélection multiple
+      const selected = new Set(this.selectedTracks());
+      if (selected.has(track.id)) {
+        selected.delete(track.id);
+      } else {
+        selected.add(track.id);
+      }
+      this.selectedTracks.set(selected);
+    } else {
+      // Sélection simple
+      const selected = new Set<string>();
+      selected.add(track.id);
+      this.selectedTracks.set(selected);
+    }
+  }
+
+  selectAll(): void {
+    const selected = new Set<string>();
+    this.paginatedTracks().forEach(track => {
+      selected.add(track.id);
+    });
+    this.selectedTracks.set(selected);
+  }
+
+  clearSelection(): void {
+    this.selectedTracks.set(new Set());
+  }
+
   // ============ DRAG & DROP ============
 
   onFilesDropped(files: FileList): void {
@@ -561,15 +481,7 @@ export class LibraryComponent implements OnInit, OnDestroy {
     );
 
     if (audioFiles.length > 0) {
-      // Ouvrir le formulaire avec le fichier audio pré-rempli
       this.openAddForm();
-
-      // Simuler la sélection du fichier dans le formulaire
-      setTimeout(() => {
-        const form = this.trackForm();
-        // Note: On ne peut pas directement appeler onAudioSelected depuis ici
-        // L'utilisateur devra sélectionner le fichier dans le formulaire
-      }, 100);
     }
   }
 
@@ -577,55 +489,59 @@ export class LibraryComponent implements OnInit, OnDestroy {
     this.isDragging.set(isDragging);
   }
 
-  // ============ IMPORT/EXPORT MODIFIÉ ============
+  // ============ IMPORT/EXPORT ============
 
-  async exportData(): Promise<void> {
-    try {
-      // Avec API, on ne peut plus exporter localement
-      console.warn('Export via API non implémenté - Utilisez les endpoints backend');
-      alert('La fonction d\'export est désactivée en mode API. Utilisez les outils backend.');
-    } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
-      alert('Erreur lors de l\'export des données');
-    }
+  exportData(): void {
+    console.warn('Export via API non implémenté');
+    alert('La fonction d\'export est désactivée en mode API.');
   }
 
   onImportFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      const file = input.files[0];
-
-      if (confirm('Importer les données ? Cela écrasera vos données actuelles.')) {
-        // Désactivé avec API
-        alert('L\'importation est désactivée en mode API.');
-        /*
-        this.trackService.importData(file)
-          .then(() => {
-            alert('Données importées avec succès !');
-            this.showImportExport.set(false);
-          })
-          .catch(error => {
-            console.error('Erreur lors de l\'import:', error);
-            alert('Erreur lors de l\'import des données');
-          });
-        */
-      }
+      alert('L\'importation est désactivée en mode API.');
     }
   }
 
-  async clearAllData(): Promise<void> {
+  clearAllData(): void {
     if (confirm('Vider toute la bibliothèque ? Cette action est irréversible.')) {
-      try {
-        // Désactivé avec API - trop dangereux
-        alert('La suppression massive est désactivée en mode API.');
-        /*
-        await this.trackService.clearAllData();
-        this.selectedTracks.set(new Set());
-        */
-      } catch (error) {
-        console.error('Erreur lors du nettoyage:', error);
-        alert('Erreur lors du nettoyage des données');
-      }
+      alert('La suppression massive est désactivée en mode API.');
+    }
+  }
+
+  // ============ BATCH ACTIONS ============
+
+  deleteSelectedTracks(): void {
+    const count = this.selectedCount();
+    if (count === 0) return;
+
+    if (confirm(`Supprimer ${count} piste(s) sélectionnée(s) ?`)) {
+      const tracksToDelete = Array.from(this.selectedTracks());
+
+      tracksToDelete.forEach(trackId => {
+        this.store.dispatch(TrackActions.deleteTrack({ id: trackId }));
+      });
+
+      this.selectedTracks.set(new Set());
+    }
+  }
+
+  addSelectedToQueue(): void {
+    const selectedIds = Array.from(this.selectedTracks());
+    const selectedTracks = this.filteredTracks().filter(track => selectedIds.includes(track.id));
+
+    selectedTracks.forEach(track => {
+      this.playerService.addToQueue(track);
+    });
+  }
+
+  playSelectedTracks(): void {
+    const selectedIds = Array.from(this.selectedTracks());
+    const selectedTracks = this.filteredTracks().filter(track => selectedIds.includes(track.id));
+
+    if (selectedTracks.length > 0) {
+      this.playerService.setQueue(selectedTracks, 0);
+      this.playerService.play();
     }
   }
 
@@ -658,45 +574,15 @@ export class LibraryComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ============ KEYBOARD SHORTCUTS ============
-
-  @HostListener('window:keydown', ['$event'])
-  handleKeyboardEvent(event: KeyboardEvent): void {
-    // Ignorer si on est dans un input
-    if (event.target instanceof HTMLInputElement ||
-      event.target instanceof HTMLTextAreaElement ||
-      event.target instanceof HTMLSelectElement) {
-      return;
-    }
-
-    switch (event.key) {
-      case 'Escape':
-        this.clearSelection();
-        break;
-      case 'a':
-      case 'A':
-        if (event.ctrlKey || event.metaKey) {
-          event.preventDefault();
-          this.selectAll();
-        }
-        break;
-      case 'Delete':
-        if (this.hasSelection()) {
-          this.deleteSelectedTracks();
-        }
-        break;
-      case ' ':
-        if (this.hasSelection()) {
-          event.preventDefault();
-          this.playSelectedTracks();
-        }
-        break;
-      case '+':
-        if (event.ctrlKey || event.metaKey) {
-          event.preventDefault();
-          this.openAddForm();
-        }
-        break;
+  getSortByLabel(): string {
+    switch (this.sortBy()) {
+      case SortBy.TITLE: return 'Titre';
+      case SortBy.ARTIST: return 'Artiste';
+      case SortBy.DATE: return 'Date';
+      case SortBy.DURATION: return 'Durée';
+      case SortBy.PLAYS: return 'Lectures';
+      case SortBy.LIKES: return 'Likes';
+      default: return 'Titre';
     }
   }
 }

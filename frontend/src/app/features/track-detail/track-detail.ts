@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, signal, computed, HostListener } from '@a
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { first } from 'rxjs/operators';
 import { Track } from '../../core/models/track.model';
 import { TrackService } from '../../core/services/track.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
@@ -13,8 +14,8 @@ import { TrackApiService } from '../../core/services/track-api.service'; // AJOU
   selector: 'app-track-detail',
   standalone: true,
   imports: [CommonModule, DurationPipe, FileSizePipe],
-  templateUrl: './track-detail.component.html',
-  styleUrls: ['./track-detail.component.css']
+  templateUrl: './track-detail.html',
+  styleUrls: ['./track-detail.css']
 })
 export class TrackDetailComponent implements OnInit, OnDestroy {
   // État local
@@ -46,7 +47,7 @@ export class TrackDetailComponent implements OnInit, OnDestroy {
     private trackService: TrackService,
     private playerService: AudioPlayerService,
     private trackApiService: TrackApiService // AJOUTÉ
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadTrack();
@@ -88,15 +89,16 @@ export class TrackDetailComponent implements OnInit, OnDestroy {
         console.error('Erreur API:', error);
 
         // Fallback: chercher dans les tracks locales
-        const localTrack = this.trackService.getTrackById(id);
-        if (localTrack) {
-          this.track.set(localTrack);
-          this.isLoading.set(false);
-          this.loadSimilarTracks(localTrack);
-        } else {
-          this.error.set('Piste non trouvée');
-          this.isLoading.set(false);
-        }
+        this.trackService.getTrackById(id).pipe(first()).subscribe(localTrack => {
+          if (localTrack) {
+            this.track.set(localTrack);
+            this.isLoading.set(false);
+            this.loadSimilarTracks(localTrack);
+          } else {
+            this.error.set('Piste non trouvée');
+            this.isLoading.set(false);
+          }
+        });
       }
     });
   }
@@ -113,12 +115,13 @@ export class TrackDetailComponent implements OnInit, OnDestroy {
         error: (error) => {
           console.error('Erreur lors du chargement des pistes similaires:', error);
           // Fallback: utiliser les tracks locales
-          const allTracks = this.trackService.tracks();
-          const similar = allTracks.filter(t =>
-            t.id !== track.id &&
-            (t.category === track.category || t.artist === track.artist)
-          ).slice(0, 5);
-          this.similarTracks.set(similar);
+          this.trackService.tracks.pipe(first()).subscribe(allTracks => {
+            const similar = allTracks.filter((t: Track) =>
+              t.id !== track.id &&
+              (t.category === track.category || t.artist === track.artist)
+            ).slice(0, 5);
+            this.similarTracks.set(similar);
+          });
         }
       });
   }
