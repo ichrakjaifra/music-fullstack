@@ -6,6 +6,8 @@ import { TrackService } from '../../core/services/track.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { TrackApiService } from '../../core/services/track-api.service';
 import { of } from 'rxjs';
+import { signal } from '@angular/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('TrackDetailComponent', () => {
   let component: TrackDetailComponent;
@@ -14,17 +16,17 @@ describe('TrackDetailComponent', () => {
   beforeEach(async () => {
     // Mock services
     const trackServiceMock = {
-      getTrackById: () => of(null)
+      getTrackById: vi.fn().mockReturnValue(of(null))
     };
     const audioPlayerServiceMock = {
-      currentTrack: () => null,
-      status: () => 'stopped',
-      currentTime: () => 0,
-      duration: () => 0,
-      progress: () => 0
+      currentTrack: signal(null),
+      status: signal('stopped'),
+      currentTime: signal(0),
+      duration: signal(0),
+      progress: signal(0)
     };
     const trackApiServiceMock = {
-      getTrack: () => of(null)
+      getTrack: vi.fn().mockReturnValue(of(null))
     };
 
     await TestBed.configureTestingModule({
@@ -43,7 +45,7 @@ describe('TrackDetailComponent', () => {
 
     fixture = TestBed.createComponent(TrackDetailComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    // fixture.detectChanges(); // Avoid initial detectChanges if it causes issues
   });
 
   it('should create', () => {

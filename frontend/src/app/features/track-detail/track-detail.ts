@@ -8,7 +8,7 @@ import { TrackService } from '../../core/services/track.service';
 import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { DurationPipe } from '../../shared/pipes/duration-pipe';
 import { FileSizePipe } from '../../shared/pipes/file-size-pipe';
-import { TrackApiService } from '../../core/services/track-api.service'; // AJOUTÉ
+import { TrackApiService } from '../../core/services/track-api.service';
 
 @Component({
   selector: 'app-track-detail',

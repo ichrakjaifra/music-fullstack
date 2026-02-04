@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { of } from 'rxjs';
 import { map, mergeMap, catchError } from 'rxjs/operators';
@@ -7,12 +7,9 @@ import { TrackApiService } from '../../services/track-api.service';
 
 @Injectable()
 export class TrackEffects {
-  constructor(
-    private actions$: Actions,
-    private trackApiService: TrackApiService
-  ) {}
+  private actions$ = inject(Actions);
+  private trackApiService = inject(TrackApiService);
 
-  // Load Tracks Effect
   loadTracks$ = createEffect(() =>
     this.actions$.pipe(
       ofType(TrackActions.loadTracks),
@@ -23,15 +20,14 @@ export class TrackEffects {
             total: response.totalElements,
             page: response.number
           })),
-          catchError(error => of(TrackActions.loadTracksFailure({
-            error: error.message || 'Erreur lors du chargement des pistes'
+          catchError(err => of(TrackActions.loadTracksFailure({
+            error: err.message
           })))
         )
       )
     )
   );
 
-  // Search Tracks Effect
   searchTracks$ = createEffect(() =>
     this.actions$.pipe(
       ofType(TrackActions.searchTracks),
@@ -42,8 +38,8 @@ export class TrackEffects {
             total: response.totalElements,
             page: response.number
           })),
-          catchError(error => of(TrackActions.searchTracksFailure({
-            error: error.message || 'Erreur lors de la recherche'
+          catchError(err => of(TrackActions.searchTracksFailure({
+            error: err.message
           })))
         )
       )
@@ -132,10 +128,8 @@ export class TrackEffects {
       mergeMap(({ id }) =>
         this.trackApiService.incrementPlays(id).pipe(
           map(() => {
-            // Pour l'effet de succès, on aurait besoin de recharger la piste
-            // ou de mettre à jour localement. Pour l'instant, on fait un succès vide.
             return TrackActions.incrementPlaysSuccess({
-              track: { id } as any // Ceci sera mis à jour par l'effet de rechargement
+              track: { id } as any
             });
           }),
           catchError(error => of(TrackActions.incrementPlaysFailure({
@@ -184,7 +178,7 @@ export class TrackEffects {
         this.trackApiService.getTracksByCategory(category, page, size).pipe(
           map(tracks => TrackActions.filterTracksByCategorySuccess({
             tracks,
-            total: tracks.length, // Note: L'API pourrait ne pas retourner le total
+            total: tracks.length,
             page
           })),
           catchError(error => of(TrackActions.filterTracksByCategoryFailure({

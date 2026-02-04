@@ -1,8 +1,8 @@
-import { TitlecasePipe } from './titlecase-pipe';
+import { TitleCasePipe } from './titlecase-pipe';
 
-describe('TitlecasePipe', () => {
+describe('TitleCasePipe', () => {
   it('create an instance', () => {
-    const pipe = new TitlecasePipe();
+    const pipe = new TitleCasePipe();
     expect(pipe).toBeTruthy();
   });
 });

@@ -17,11 +17,11 @@ export class TrackApiService {
   // ============ CRUD OPERATIONS ============
 
   getAllTracks(page: number = 0, size: number = 20): Observable<PaginatedResponse<Track>> {
-    return this.apiService.getPaginated<Track>('/tracks', page, size);
+    return this.apiService.getPaginated<Track>('/api/tracks', page, size);
   }
 
   getTrack(id: string): Observable<Track> {
-    return this.apiService.get<Track>(`/tracks/${id}`);
+    return this.apiService.get<Track>(`/api/tracks/${id}`);
   }
 
   createTrack(trackData: CreateTrackRequest, audioFile: File, imageFile?: File): Observable<Track> {
@@ -42,36 +42,36 @@ export class TrackApiService {
       formData.append('description', trackData.description);
     }
 
-    return this.apiService.uploadFile<Track>('/tracks', formData);
+    return this.apiService.uploadFile<Track>('/api/tracks', formData);
   }
 
   updateTrack(id: string, trackData: UpdateTrackRequest): Observable<Track> {
-    return this.apiService.put<Track>(`/tracks/${id}`, trackData);
+    return this.apiService.put<Track>(`/api/tracks/${id}`, trackData);
   }
 
   deleteTrack(id: string): Observable<void> {
-    return this.apiService.delete<void>(`/tracks/${id}`);
+    return this.apiService.delete<void>(`/api/tracks/${id}`);
   }
 
   // ============ TRACK ACTIONS ============
 
   likeTrack(id: string): Observable<Track> {
-    return this.apiService.post<Track>(`/tracks/${id}/like`, {});
+    return this.apiService.post<Track>(`/api/tracks/${id}/like`, {});
   }
 
   incrementPlays(id: string): Observable<void> {
-    return this.apiService.post<void>(`/tracks/${id}/play`, {});
+    return this.apiService.post<void>(`/api/tracks/${id}/play`, {});
   }
 
   // ============ SEARCH & FILTER ============
 
   searchTracks(query: string, page: number = 0, size: number = 20): Observable<PaginatedResponse<Track>> {
     const params = { q: query };
-    return this.apiService.getPaginated<Track>('/tracks/search', page, size, params);
+    return this.apiService.getPaginated<Track>('/api/tracks/search', page, size, params);
   }
 
   getTracksByCategory(category: string, page: number = 0, size: number = 20): Observable<Track[]> {
-    return this.apiService.get<Track[]>(`/tracks/category/${category}`, {
+    return this.apiService.get<Track[]>(`/api/tracks/category/${category}`, {
       page: page.toString(),
       size: size.toString()
     });
@@ -80,23 +80,23 @@ export class TrackApiService {
   // ============ STATISTICS ============
 
   getMostPlayed(limit: number = 10): Observable<Track[]> {
-    return this.apiService.get<Track[]>('/tracks/most-played', { limit: limit.toString() });
+    return this.apiService.get<Track[]>(`/api/tracks/most-played`, { limit: limit.toString() });
   }
 
   getMostLiked(limit: number = 10): Observable<Track[]> {
-    return this.apiService.get<Track[]>('/tracks/most-liked', { limit: limit.toString() });
+    return this.apiService.get<Track[]>(`/api/tracks/most-liked`, { limit: limit.toString() });
   }
 
   getRecentTracks(limit: number = 10): Observable<Track[]> {
-    return this.apiService.get<Track[]>('/tracks/recent', { limit: limit.toString() });
+    return this.apiService.get<Track[]>(`/api/tracks/recent`, { limit: limit.toString() });
   }
 
   getStats(): Observable<TrackStats> {
-    return this.apiService.get<TrackStats>('/tracks/stats');
+    return this.apiService.get<TrackStats>('/api/tracks/stats');
   }
 
   getCategoryStats(): Observable<Record<string, number>> {
-    return this.apiService.get<Record<string, number>>('/tracks/stats/categories');
+    return this.apiService.get<Record<string, number>>('/api/tracks/stats/categories');
   }
 
   // ============ FILE MANAGEMENT ============
@@ -105,13 +105,13 @@ export class TrackApiService {
     const formData = new FormData();
     formData.append('image', imageFile);
 
-    return this.apiService.post<Track>(`/tracks/${id}/image`, formData);
+    return this.apiService.post<Track>(`/api/tracks/${id}/image`, formData);
   }
 
   // ============ UTILITIES ============
 
   getAudioStreamUrl(id: string): string {
-    return `${this.apiUrl}/tracks/stream/${id}`;
+    return `${this.apiUrl}/api/tracks/stream/${id}`;
   }
 
   refreshTracks(): Observable<PaginatedResponse<Track>> {

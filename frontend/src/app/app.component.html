@@ -1,4 +1,7 @@
 <div class="app-container" [class.player-visible]="hasCurrentTrack()">
+  <div
+    style="position:fixed; top:10px; right:10px; z-index:10000; color:white; background:red; padding:5px; font-size:12px;">
+    APP_READY</div>
 
   <!-- Navigation -->
   <nav class="navbar navbar-expand-lg navbar-dark">
@@ -12,10 +15,7 @@
       </a>
 
       <!-- Toggle pour mobile -->
-      <button class="navbar-toggler"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#navbarContent">
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
         <span class="navbar-toggler-icon"></span>
       </button>
 
@@ -25,9 +25,7 @@
         <!-- Navigation principale -->
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
-            <a class="nav-link"
-               routerLink="/library"
-               routerLinkActive="active"
+            <a class="nav-link" routerLink="/library" routerLinkActive="active"
                [routerLinkActiveOptions]="{exact: false}">
               <i class="bi bi-collection-play me-1"></i>
               Bibliothèque
@@ -36,10 +34,7 @@
 
           <!-- Menu déroulant pour les stats -->
           <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle"
-               href="#"
-               role="button"
-               data-bs-toggle="dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
               <i class="bi bi-bar-chart me-1"></i>
               Statistiques
             </a>
@@ -70,17 +65,14 @@
               <span class="input-group-text bg-dark border-dark">
                 <i class="bi bi-search"></i>
               </span>
-              <input type="text"
-                     class="form-control bg-dark border-dark text-white"
-                     placeholder="Recherche globale..."
+              <input type="text" class="form-control bg-dark border-dark text-white" placeholder="Recherche globale..."
                      style="min-width: 200px;">
             </div>
           </div>
 
           <!-- Notifications -->
           <div class="dropdown me-3">
-            <button class="btn btn-link text-white dropdown-toggle"
-                    data-bs-toggle="dropdown">
+            <button class="btn btn-link text-white dropdown-toggle" data-bs-toggle="dropdown">
               <i class="bi bi-bell"></i>
               <span class="badge bg-danger rounded-pill">3</span>
             </button>
@@ -107,8 +99,7 @@
 
           <!-- Utilisateur -->
           <div class="dropdown">
-            <button class="btn btn-link text-white dropdown-toggle d-flex align-items-center"
-                    data-bs-toggle="dropdown">
+            <button class="btn btn-link text-white dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
               <div class="user-avatar me-2">
                 <i class="bi bi-person-circle"></i>
               </div>
@@ -160,9 +151,7 @@
     </div>
 
     <!-- Bouton retour en haut -->
-    <button class="btn-scroll-top"
-            (click)="scrollToTop()"
-            *ngIf="currentRoute() !== '/'">
+    <button class="btn-scroll-top" (click)="scrollToTop()" *ngIf="currentRoute() !== '/'">
       <i class="bi bi-chevron-up"></i>
     </button>
   </main>

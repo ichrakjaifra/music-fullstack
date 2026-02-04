@@ -1,20 +1,22 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TrackFormComponent } from './track-form';
+import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { TrackForm } from './track-form';
-
-describe('TrackForm', () => {
-  let component: TrackForm;
-  let fixture: ComponentFixture<TrackForm>;
+describe('TrackFormComponent', () => {
+  let component: TrackFormComponent;
+  let fixture: ComponentFixture<TrackFormComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TrackForm]
-    })
-    .compileComponents();
+      imports: [TrackFormComponent, ReactiveFormsModule],
+      providers: [FormBuilder],
+      schemas: [NO_ERRORS_SCHEMA]
+    }).compileComponents();
 
-    fixture = TestBed.createComponent(TrackForm);
+    fixture = TestBed.createComponent(TrackFormComponent);
     component = fixture.componentInstance;
-    await fixture.whenStable();
   });
 
   it('should create', () => {

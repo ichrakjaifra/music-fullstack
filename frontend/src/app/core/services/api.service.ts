@@ -16,17 +16,14 @@ import { ApiResponse, PaginatedResponse } from '../models/api-response.model';
   providedIn: 'root'
 })
 export class ApiService {
-  private readonly apiUrl = environment.apiUrl;
-
+  // L'URL de base est gérée par l'intercepteur
   constructor(private http: HttpClient) { }
 
   // GET request
   get<T>(endpoint: string, params?: any): Observable<T> {
-    return this.http.get<T>(`${this.apiUrl}${endpoint}`, {
+    return this.http.get<T>(endpoint, {
       params: new HttpParams({ fromObject: params })
-    }).pipe(
-      catchError(this.handleError)
-    );
+    });
   }
 
   // GET avec pagination
@@ -43,110 +40,58 @@ export class ApiService {
       });
     }
 
-    return this.http.get<PaginatedResponse<T>>(`${this.apiUrl}${endpoint}`, {
+    return this.http.get<PaginatedResponse<T>>(endpoint, {
       params: httpParams
-    }).pipe(
-      catchError(this.handleError)
-    );
+    });
   }
 
   // POST request
   post<T>(endpoint: string, data: any, options?: any): Observable<T> {
-    return this.http.post<T>(`${this.apiUrl}${endpoint}`, data, options)
-      .pipe(
-        catchError(this.handleError)
-      ) as Observable<T>;
+    return this.http.post<T>(endpoint, data, options) as Observable<T>;
   }
 
   // PUT request
   put<T>(endpoint: string, data: any): Observable<T> {
-    return this.http.put<T>(`${this.apiUrl}${endpoint}`, data)
-      .pipe(
-        catchError(this.handleError)
-      );
+    return this.http.put<T>(endpoint, data);
   }
 
   // PATCH request
   patch<T>(endpoint: string, data: any): Observable<T> {
-    return this.http.patch<T>(`${this.apiUrl}${endpoint}`, data)
-      .pipe(
-        catchError(this.handleError)
-      );
+    return this.http.patch<T>(endpoint, data);
   }
 
   // DELETE request
   delete<T>(endpoint: string): Observable<T> {
-    return this.http.delete<T>(`${this.apiUrl}${endpoint}`)
-      .pipe(
-        catchError(this.handleError)
-      );
+    return this.http.delete<T>(endpoint);
   }
 
   // Upload file avec progression - Option 1: Retourne seulement la réponse finale
   uploadFile<T>(endpoint: string, formData: FormData): Observable<T> {
-    return this.http.post(`${this.apiUrl}${endpoint}`, formData, {
+    return this.http.post(endpoint, formData, {
       reportProgress: true,
       observe: 'events'
     }).pipe(
       filter((event: HttpEvent<any>): event is HttpResponse<T> => event.type === HttpEventType.Response),
-      map((event: HttpResponse<T>) => event.body as T),
-      catchError(this.handleError)
+      map((event: HttpResponse<T>) => event.body as T)
     ) as Observable<T>;
   }
 
   // Upload file avec progression complète - Option 2: Retourne tous les événements
   uploadFileWithProgress<T>(endpoint: string, formData: FormData): Observable<HttpEvent<T>> {
-    return this.http.post<T>(`${this.apiUrl}${endpoint}`, formData, {
+    return this.http.post<T>(endpoint, formData, {
       reportProgress: true,
       observe: 'events'
-    }).pipe(
-      catchError(this.handleError)
-    );
+    });
   }
 
   // Download file
   downloadFile(endpoint: string, params?: any): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}${endpoint}`, {
+    return this.http.get(endpoint, {
       params: new HttpParams({ fromObject: params }),
       responseType: 'blob'
-    }).pipe(
-      catchError(this.handleError)
-    );
+    });
   }
 
-  // Error handler
-  private handleError(error: HttpErrorResponse) {
-    let errorMessage = 'Une erreur est survenue';
-
-    if (error.error instanceof ErrorEvent) {
-      // Client-side error
-      errorMessage = error.error.message;
-    } else {
-      // Server-side error
-      if (error.error && error.error.message) {
-        errorMessage = error.error.message;
-      } else if (error.status === 0) {
-        errorMessage = 'Impossible de se connecter au serveur. Veuillez vérifier votre connexion.';
-      } else if (error.status === 404) {
-        errorMessage = 'Ressource non trouvée';
-      } else if (error.status === 500) {
-        errorMessage = 'Erreur interne du serveur';
-      } else if (error.status === 401) {
-        errorMessage = 'Non autorisé. Veuillez vous reconnecter.';
-      } else if (error.status === 403) {
-        errorMessage = 'Accès interdit';
-      } else if (error.status === 400) {
-        errorMessage = 'Requête invalide';
-      } else if (error.status === 422) {
-        errorMessage = 'Données invalides';
-      } else if (error.status === 409) {
-        errorMessage = 'Conflit de données';
-      }
-    }
-
-    console.error('API Error:', error);
-    return throwError(() => new Error(errorMessage));
-  }
 
   // Méthode utilitaire pour construire des query params
   buildQueryParams(params: any): HttpParams {
