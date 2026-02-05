@@ -74,7 +74,6 @@ frontend/.npm
 frontend/.yarn
 frontend/.yarnrc
 frontend/yarn.lock
-frontend/package-lock.json
 frontend/bower_components
 
 # Build
