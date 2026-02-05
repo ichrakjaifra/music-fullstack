@@ -152,19 +152,22 @@ export class LibraryComponent implements OnInit, OnDestroy {
 
     this.categories$
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(categories => this.categories.set(['all', ...categories]));
+      .subscribe(categories => {
+        // Toujours mettre 'all' en premier et éviter les doublons
+        this.categories.set(['all', ...categories]);
+      });
 
     this.stats$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(stats => {
         if (stats) {
-          this.stats.set({
+          this.stats.update(s => ({
+            ...s,
             totalTracks: stats.totalTracks,
             totalDuration: stats.totalDuration,
             totalPlays: stats.totalPlays,
-            totalLikes: stats.totalLikes,
-            byCategory: {}
-          });
+            totalLikes: stats.totalLikes
+          }));
         }
       });
 
@@ -251,18 +254,36 @@ export class LibraryComponent implements OnInit, OnDestroy {
     audioFile: File;
     imageFile?: File;
   }): void {
-    const createRequest = {
-      title: event.trackData.title!,
-      artist: event.trackData.artist!,
-      description: event.trackData.description,
-      category: event.trackData.category as MusicCategory
-    };
+    const editingTrack = this.editingTrack();
 
-    this.store.dispatch(TrackActions.createTrack({
-      trackData: createRequest,
-      audioFile: event.audioFile,
-      imageFile: event.imageFile
-    }));
+    if (editingTrack) {
+      // Cas de la mise à jour
+      const updateRequest = {
+        title: event.trackData.title!,
+        artist: event.trackData.artist!,
+        description: event.trackData.description,
+        category: event.trackData.category as MusicCategory
+      };
+
+      this.store.dispatch(TrackActions.updateTrack({
+        id: editingTrack.id,
+        trackData: updateRequest
+      }));
+    } else {
+      // Cas de la création
+      const createRequest = {
+        title: event.trackData.title!,
+        artist: event.trackData.artist!,
+        description: event.trackData.description,
+        category: event.trackData.category as MusicCategory
+      };
+
+      this.store.dispatch(TrackActions.createTrack({
+        trackData: createRequest,
+        audioFile: event.audioFile,
+        imageFile: event.imageFile
+      }));
+    }
 
     this.showForm.set(false);
     this.editingTrack.set(null);

@@ -67,7 +67,11 @@ export class TrackEffects {
       ofType(TrackActions.createTrack),
       mergeMap(({ trackData, audioFile, imageFile }) =>
         this.trackApiService.createTrack(trackData, audioFile, imageFile).pipe(
-          map(track => TrackActions.createTrackSuccess({ track })),
+          mergeMap(track => [
+            TrackActions.createTrackSuccess({ track }),
+            TrackActions.loadTrackStats(),
+            TrackActions.loadCategoryStats()
+          ]),
           catchError(error => of(TrackActions.createTrackFailure({
             error: error.message || 'Erreur lors de la création de la piste'
           })))
@@ -82,7 +86,11 @@ export class TrackEffects {
       ofType(TrackActions.updateTrack),
       mergeMap(({ id, trackData }) =>
         this.trackApiService.updateTrack(id, trackData).pipe(
-          map(track => TrackActions.updateTrackSuccess({ track })),
+          mergeMap(track => [
+            TrackActions.updateTrackSuccess({ track }),
+            TrackActions.loadTrackStats(),
+            TrackActions.loadCategoryStats()
+          ]),
           catchError(error => of(TrackActions.updateTrackFailure({
             error: error.message || 'Erreur lors de la mise à jour de la piste'
           })))
@@ -97,7 +105,11 @@ export class TrackEffects {
       ofType(TrackActions.deleteTrack),
       mergeMap(({ id }) =>
         this.trackApiService.deleteTrack(id).pipe(
-          map(() => TrackActions.deleteTrackSuccess({ id })),
+          mergeMap(() => [
+            TrackActions.deleteTrackSuccess({ id }),
+            TrackActions.loadTrackStats(),
+            TrackActions.loadCategoryStats()
+          ]),
           catchError(error => of(TrackActions.deleteTrackFailure({
             error: error.message || 'Erreur lors de la suppression de la piste'
           })))
@@ -112,7 +124,11 @@ export class TrackEffects {
       ofType(TrackActions.likeTrack),
       mergeMap(({ id }) =>
         this.trackApiService.likeTrack(id).pipe(
-          map(track => TrackActions.likeTrackSuccess({ track })),
+          mergeMap(track => [
+            TrackActions.likeTrackSuccess({ track }),
+            TrackActions.loadTrackStats(),
+            TrackActions.loadCategoryStats()
+          ]),
           catchError(error => of(TrackActions.likeTrackFailure({
             error: error.message || 'Erreur lors du like'
           })))
@@ -127,11 +143,11 @@ export class TrackEffects {
       ofType(TrackActions.incrementPlays),
       mergeMap(({ id }) =>
         this.trackApiService.incrementPlays(id).pipe(
-          map(() => {
-            return TrackActions.incrementPlaysSuccess({
-              track: { id } as any
-            });
-          }),
+          mergeMap(() => [
+            TrackActions.incrementPlaysSuccess({ track: { id } as any }),
+            TrackActions.loadTrackStats(),
+            TrackActions.loadCategoryStats()
+          ]),
           catchError(error => of(TrackActions.incrementPlaysFailure({
             error: error.message || 'Erreur lors de l\'incrémentation des lectures'
           })))

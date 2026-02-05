@@ -119,8 +119,7 @@ export const selectCategories = createSelector(
   selectAllTracks,
   (tracks) => {
     const categories = tracks.map(t => t.category);
-    const uniqueCategories = Array.from(new Set(categories));
-    return ['all', ...uniqueCategories];
+    return Array.from(new Set(categories));
   }
 );
 
