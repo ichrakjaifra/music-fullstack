@@ -43,10 +43,12 @@ public class TrackServiceImpl implements TrackService {
         String audioUrl = fileStorageService.saveAudioFile(audioFile);
 
         // Save image file if provided
-        String imageUrl = null;
+        String imageUrl;
         if (imageFile != null && !imageFile.isEmpty()) {
             validateImageFile(imageFile);
             imageUrl = fileStorageService.saveImageFile(imageFile);
+        } else {
+            imageUrl = "/uploads/images/default-track.jpg";
         }
 
         // Calculate audio duration
@@ -146,8 +148,7 @@ public class TrackServiceImpl implements TrackService {
     public List<TrackDTO> getTracksByCategory(String category, Pageable pageable) {
         return trackRepository.findByCategory(
                         MusicCategory.valueOf(category.toUpperCase()),
-                        pageable
-                ).stream()
+                        pageable).stream()
                 .map(trackMapper::toDTO)
                 .collect(Collectors.toList());
     }
@@ -196,8 +197,7 @@ public class TrackServiceImpl implements TrackService {
         return trackRepository.countByCategory().stream()
                 .collect(Collectors.toMap(
                         obj -> ((MusicCategory) obj[0]).name(),
-                        obj -> (Long) obj[1]
-                ));
+                        obj -> (Long) obj[1]));
     }
 
     @Override
@@ -235,10 +235,11 @@ public class TrackServiceImpl implements TrackService {
     }
 
     private void validateImageFile(MultipartFile file) {
-        if (file == null || file.isEmpty()) return;
+        if (file == null || file.isEmpty())
+            return;
 
-        if (file.getSize() > 10 * 1024 * 1024) {
-            throw new IllegalArgumentException("Image file size must be less than 10MB");
+        if (file.getSize() > 20 * 1024 * 1024) {
+            throw new IllegalArgumentException("Image file size must be less than 20MB");
         }
 
         String contentType = file.getContentType();

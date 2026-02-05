@@ -43,7 +43,7 @@ springdoc:
 file:
   upload-dir: ./uploads
   max-audio-size: 52428800
-  max-image-size: 10485760
+  max-image-size: 20971520
 
 logging:
   level:

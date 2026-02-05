@@ -166,8 +166,8 @@ export class TrackFormComponent implements OnInit, OnDestroy {
 
   private handleImageFile(file: File): void {
     // Validation taille
-    if (file.size > 2 * 1024 * 1024) {
-      this.imageError.set('Image trop volumineuse (max 2MB)');
+    if (file.size > 20 * 1024 * 1024) {
+      this.imageError.set('Image trop volumineuse (max 20MB)');
       this.imageFile.set(null);
       return;
     }
