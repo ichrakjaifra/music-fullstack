@@ -4,7 +4,7 @@
 
   <!-- Cover Image avec overlay -->
   <div class="cover-container" [style.background]="coverColor()">
-    <img [src]="track.coverImage || 'images/default-track.jpg'" [alt]="track.title" class="cover-image"
+    <img [src]="track.coverImage | apiUrl" [alt]="track.title" class="cover-image"
          loading="lazy">
 
     <!-- Overlay de lecture -->

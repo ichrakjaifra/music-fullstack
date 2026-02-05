@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { DurationPipe } from '../../pipes/duration-pipe';
 import { FileSizePipe } from '../../pipes/file-size-pipe';
 import { TitleCasePipe } from '../../pipes/titlecase-pipe';
+import { ApiUrlPipe } from '../../pipes/api-url.pipe';
 import { AudioPlayerService } from '../../../core/services/audio-player.service';
 import { TrackService } from '../../../core/services/track.service';
 
@@ -15,7 +16,9 @@ import { TrackService } from '../../../core/services/track.service';
     FormsModule,
     DurationPipe,
     FileSizePipe,
-    TitleCasePipe
+    FileSizePipe,
+    TitleCasePipe,
+    ApiUrlPipe
   ],
   templateUrl: './audio-player.html',
   styleUrls: ['./audio-player.css']

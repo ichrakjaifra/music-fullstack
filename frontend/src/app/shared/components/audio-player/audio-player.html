@@ -9,13 +9,10 @@
           <div class="track-info d-flex align-items-center">
             <!-- Cover Image avec effet -->
             <div class="cover-container position-relative me-3">
-              <img
-                [src]="currentCoverImage()"
-                [alt]="currentTitle()"
-                class="cover-image rounded shadow-lg"
-                [style.borderColor]="getTrackColor()"
-              >
-              <div class="cover-overlay" [style.background]="'linear-gradient(135deg, ' + getTrackColor() + '33 0%, transparent 100%)'"></div>
+              <img [src]="currentTrack()?.coverImage | apiUrl" [alt]="currentTitle()"
+                class="cover-image rounded shadow-lg" [style.borderColor]="getTrackColor()">
+              <div class="cover-overlay"
+                [style.background]="'linear-gradient(135deg, ' + getTrackColor() + '33 0%, transparent 100%)'"></div>
 
               <!-- Animation de lecture -->
               <div *ngIf="isPlaying()" class="playing-animation">
@@ -54,45 +51,30 @@
             <!-- Boutons de contrôle principaux -->
             <div class="controls-top d-flex justify-content-center align-items-center gap-3 mb-3">
               <!-- Shuffle -->
-              <button class="btn-control"
-                      [class.active]="isShuffled()"
-                      (click)="toggleShuffle()"
-                      title="Mélanger">
+              <button class="btn-control" [class.active]="isShuffled()" (click)="toggleShuffle()" title="Mélanger">
                 <i class="bi bi-shuffle"></i>
               </button>
 
               <!-- Previous -->
-              <button class="btn-control btn-control-lg"
-                      (click)="previous()"
-                      [disabled]="!hasPrevious()"
-                      title="Précédent">
+              <button class="btn-control btn-control-lg" (click)="previous()" [disabled]="!hasPrevious()"
+                title="Précédent">
                 <i class="bi bi-skip-backward-fill"></i>
               </button>
 
               <!-- Play/Pause -->
-              <button class="btn-play-pause"
-                      (click)="togglePlay()"
-                      [disabled]="isLoading()"
-                      title="{{ isPlaying() ? 'Pause' : 'Lecture' }}">
+              <button class="btn-play-pause" (click)="togglePlay()" [disabled]="isLoading()"
+                title="{{ isPlaying() ? 'Pause' : 'Lecture' }}">
                 <i *ngIf="isLoading()" class="bi bi-arrow-clockwise animate-spin"></i>
-                <i *ngIf="!isLoading()"
-                   [class.bi-play-fill]="!isPlaying()"
-                   [class.bi-pause-fill]="isPlaying()"></i>
+                <i *ngIf="!isLoading()" [class.bi-play-fill]="!isPlaying()" [class.bi-pause-fill]="isPlaying()"></i>
               </button>
 
               <!-- Next -->
-              <button class="btn-control btn-control-lg"
-                      (click)="next()"
-                      [disabled]="!hasNext()"
-                      title="Suivant">
+              <button class="btn-control btn-control-lg" (click)="next()" [disabled]="!hasNext()" title="Suivant">
                 <i class="bi bi-skip-forward-fill"></i>
               </button>
 
               <!-- Repeat -->
-              <button class="btn-control"
-                      [class.active]="isRepeating()"
-                      (click)="toggleRepeat()"
-                      title="Répéter">
+              <button class="btn-control" [class.active]="isRepeating()" (click)="toggleRepeat()" title="Répéter">
                 <i class="bi bi-repeat"></i>
               </button>
             </div>
@@ -105,11 +87,8 @@
               </div>
 
               <!-- Barre de progression -->
-              <div class="progress-wrapper"
-                   (mousedown)="onSeekStart($event)"
-                   (mousemove)="onSeeking($event)"
-                   (mouseup)="onSeekEnd($event)"
-                   (mouseleave)="isSeeking.set(false)">
+              <div class="progress-wrapper" (mousedown)="onSeekStart($event)" (mousemove)="onSeeking($event)"
+                (mouseup)="onSeekEnd($event)" (mouseleave)="isSeeking.set(false)">
 
                 <!-- Barre de fond -->
                 <div class="progress-background"></div>
@@ -124,9 +103,8 @@
                 <div class="progress-cursor" [style.left.%]="progress()"></div>
 
                 <!-- Preview du temps -->
-                <div *ngIf="seekPreviewTime() !== null"
-                     class="seek-preview"
-                     [style.left.%]="(seekPreviewTime()! / duration()) * 100">
+                <div *ngIf="seekPreviewTime() !== null" class="seek-preview"
+                  [style.left.%]="(seekPreviewTime()! / duration()) * 100">
                   {{ getSeekPreviewFormatted() }}
                 </div>
               </div>
@@ -155,45 +133,32 @@
           <div class="player-options d-flex align-items-center justify-content-end gap-3">
 
             <!-- Bouton Like -->
-            <button class="btn-option"
-                    (click)="likeCurrentTrack()"
-                    title="Ajouter aux favoris">
+            <button class="btn-option" (click)="likeCurrentTrack()" title="Ajouter aux favoris">
               <i class="bi bi-heart" [class.text-danger]="currentLikes() > 0"></i>
             </button>
 
             <!-- Bouton Queue -->
-            <button class="btn-option"
-                    (click)="toggleQueue()"
-                    title="File d'attente">
+            <button class="btn-option" (click)="toggleQueue()" title="File d'attente">
               <i class="bi bi-music-note-list"></i>
             </button>
 
             <!-- Volume -->
             <div class="volume-control d-flex align-items-center">
-              <button class="btn-option me-2"
-                      (click)="toggleMute()"
-                      title="{{ isMuted() ? 'Activer le son' : 'Couper le son' }}">
-                <i [class.bi-volume-mute-fill]="isMuted()"
-                   [class.bi-volume-up-fill]="!isMuted() && volume() > 0.5"
-                   [class.bi-volume-down-fill]="!isMuted() && volume() <= 0.5 && volume() > 0"
-                   [class.bi-volume-off-fill]="!isMuted() && volume() === 0"></i>
+              <button class="btn-option me-2" (click)="toggleMute()"
+                title="{{ isMuted() ? 'Activer le son' : 'Couper le son' }}">
+                <i [class.bi-volume-mute-fill]="isMuted()" [class.bi-volume-up-fill]="!isMuted() && volume() > 0.5"
+                  [class.bi-volume-down-fill]="!isMuted() && volume() <= 0.5 && volume() > 0"
+                  [class.bi-volume-off-fill]="!isMuted() && volume() === 0"></i>
               </button>
 
               <!-- Slider Volume -->
               <div class="volume-slider-wrapper" *ngIf="showVolumeSlider()">
-                <input type="range"
-                       class="volume-slider"
-                       min="0"
-                       max="1"
-                       step="0.01"
-                       [value]="volume()"
-                       (input)="onVolumeChange($event)">
+                <input type="range" class="volume-slider" min="0" max="1" step="0.01" [value]="volume()"
+                  (input)="onVolumeChange($event)">
               </div>
 
               <!-- Bouton pour afficher/masquer le slider -->
-              <button class="btn-option ms-2"
-                      (click)="toggleVolumeSlider()"
-                      title="Contrôle du volume">
+              <button class="btn-option ms-2" (click)="toggleVolumeSlider()" title="Contrôle du volume">
                 <i class="bi bi-sliders"></i>
               </button>
             </div>
@@ -225,13 +190,10 @@
         File d'attente ({{ queue().length }})
       </h6>
       <div class="queue-actions">
-        <button class="btn btn-sm btn-outline-danger me-2"
-                (click)="clearQueue()"
-                [disabled]="queue().length === 0">
+        <button class="btn btn-sm btn-outline-danger me-2" (click)="clearQueue()" [disabled]="queue().length === 0">
           <i class="bi bi-trash me-1"></i> Vider
         </button>
-        <button class="btn btn-sm btn-outline-secondary"
-                (click)="toggleQueue()">
+        <button class="btn btn-sm btn-outline-secondary" (click)="toggleQueue()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
@@ -239,19 +201,16 @@
 
     <!-- Liste de la queue -->
     <div class="queue-list">
-      <div *ngFor="let track of queue(); let i = index"
-           class="queue-item"
-           [class.current]="i === currentIndex()"
-           (click)="playFromQueue(i)">
+      <div *ngFor="let track of queue(); let i = index" class="queue-item" [class.current]="i === currentIndex()"
+        (click)="playFromQueue(i)">
 
         <div class="queue-item-number">
           {{ i + 1 }}
         </div>
 
         <div class="queue-item-cover">
-          <img [src]="track.coverImage || 'assets/images/default-cover.png'"
-               [alt]="track.title"
-               class="rounded">
+          <img [src]="(track.coverImage | apiUrl) || 'assets/images/default-cover.png'" [alt]="track.title"
+            class="rounded">
         </div>
 
         <div class="queue-item-info flex-grow-1">
@@ -271,8 +230,7 @@
         </div>
 
         <div class="queue-item-actions">
-          <button class="btn btn-sm btn-outline-danger"
-                  (click)="$event.stopPropagation(); removeFromQueue(i)">
+          <button class="btn btn-sm btn-outline-danger" (click)="$event.stopPropagation(); removeFromQueue(i)">
             <i class="bi bi-x"></i>
           </button>
         </div>

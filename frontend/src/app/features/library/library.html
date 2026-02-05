@@ -1,4 +1,5 @@
-<div class="library-page" [class.dragging]="isDragging()" appDragDrop (filesDropped)="onFilesDropped($event)" (dragOver)="onDragOver($event)">
+<div class="library-page" [class.dragging]="isDragging()" appDragDrop (filesDropped)="onFilesDropped($event)"
+  (dragOver)="onDragOver($event)">
 
   <!-- En-tête -->
   <div class="library-header glass-effect animate-fade-in">
@@ -31,14 +32,9 @@
         <div class="col-md-4">
           <div class="search-box">
             <i class="bi bi-search search-icon"></i>
-            <input type="text"
-                   class="search-input"
-                   placeholder="Rechercher des pistes..."
-                   (input)="onSearchInput($event)"
-                   [value]="searchTerm()">
-            <button *ngIf="searchTerm()"
-                    class="search-clear"
-                    (click)="clearSearch()">
+            <input type="text" class="search-input" placeholder="Rechercher des pistes..."
+              (input)="onSearchInput($event)" [value]="searchTerm()">
+            <button *ngIf="searchTerm()" class="search-clear" (click)="clearSearch()">
               <i class="bi bi-x"></i>
             </button>
           </div>
@@ -53,10 +49,8 @@
             </button>
 
             <div class="dropdown">
-              <button class="btn btn-outline-secondary dropdown-toggle"
-                      type="button"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false">
+              <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                aria-expanded="false">
                 <i class="bi bi-sliders"></i>
               </button>
               <div class="dropdown-menu dropdown-menu-end">
@@ -94,10 +88,8 @@
         <div class="col-md-6">
           <div class="categories-filter">
             <div class="btn-group" role="group">
-              <button *ngFor="let category of categories()"
-                      class="btn btn-outline-secondary"
-                      [class.active]="selectedCategory() === category"
-                      (click)="onCategoryChange(category)">
+              <button *ngFor="let category of categories()" class="btn btn-outline-secondary"
+                [class.active]="selectedCategory() === category" (click)="onCategoryChange(category)">
                 {{ category === 'all' ? 'Toutes' : (category | titlecase) }}
                 <span *ngIf="category !== 'all'" class="badge bg-dark ms-1">
                   {{ (stats().byCategory[category] || 0) }}
@@ -114,10 +106,8 @@
             <!-- Tri -->
             <div class="sort-controls">
               <div class="btn-group" role="group">
-                <button class="btn btn-outline-secondary dropdown-toggle"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false">
+                <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false">
                   <i [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + '-alt me-1'"></i>
                   {{ getSortByLabel() }}
                 </button>
@@ -155,19 +145,16 @@
               <span class="badge bg-primary me-2">
                 {{ selectedCount() }} sélectionné(s)
               </span>
-              <button class="btn btn-sm btn-outline-primary me-1"
-                      (click)="playSelectedTracks()"
-                      title="Lire la sélection">
+              <button class="btn btn-sm btn-outline-primary me-1" (click)="playSelectedTracks()"
+                title="Lire la sélection">
                 <i class="bi bi-play-fill"></i>
               </button>
-              <button class="btn btn-sm btn-outline-secondary me-1"
-                      (click)="addSelectedToQueue()"
-                      title="Ajouter à la file">
+              <button class="btn btn-sm btn-outline-secondary me-1" (click)="addSelectedToQueue()"
+                title="Ajouter à la file">
                 <i class="bi bi-plus-circle"></i>
               </button>
-              <button class="btn btn-sm btn-outline-danger"
-                      (click)="deleteSelectedTracks()"
-                      title="Supprimer la sélection">
+              <button class="btn btn-sm btn-outline-danger" (click)="deleteSelectedTracks()"
+                title="Supprimer la sélection">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -175,17 +162,14 @@
             <!-- Pagination -->
             <div class="pagination-controls" *ngIf="totalPages() > 1">
               <div class="btn-group">
-                <button class="btn btn-outline-secondary btn-sm"
-                        (click)="prevPage()"
-                        [disabled]="currentPage() === 0">
+                <button class="btn btn-outline-secondary btn-sm" (click)="prevPage()" [disabled]="currentPage() === 0">
                   <i class="bi bi-chevron-left"></i>
                 </button>
                 <span class="btn btn-outline-secondary btn-sm disabled">
                   {{ currentPage() + 1 }} / {{ totalPages() }}
                 </span>
-                <button class="btn btn-outline-secondary btn-sm"
-                        (click)="nextPage()"
-                        [disabled]="currentPage() === totalPages() - 1">
+                <button class="btn btn-outline-secondary btn-sm" (click)="nextPage()"
+                  [disabled]="currentPage() === totalPages() - 1">
                   <i class="bi bi-chevron-right"></i>
                 </button>
               </div>
@@ -209,8 +193,7 @@
     <div class="alert alert-danger">
       <i class="bi bi-exclamation-triangle me-2"></i>
       {{ error() }}
-      <button class="btn btn-sm btn-outline-danger ms-2"
-              (click)="store.dispatch(TrackActions.loadTracks({ page: 0 }))">
+      <button class="btn btn-sm btn-outline-danger ms-2" (click)="store.dispatch(TrackActions.loadTracks({ page: 0 }))">
         Réessayer
       </button>
     </div>
@@ -235,11 +218,8 @@
   <!-- Formulaire d'ajout/modification -->
   <div *ngIf="showForm()" class="form-overlay animate-fade-in">
     <div class="form-container">
-      <app-track-form
-        [track]="editingTrack() || undefined"
-        [isEditing]="!!editingTrack()"
-        (submitTrack)="onTrackSubmit($event)"
-        (cancel)="onFormCancel()">
+      <app-track-form [track]="editingTrack() || undefined" [isEditing]="!!editingTrack()"
+        (submitTrack)="onTrackSubmit($event)" (cancel)="onFormCancel()">
       </app-track-form>
     </div>
   </div>
@@ -251,17 +231,10 @@
     <div *ngIf="viewMode() === 'grid'" class="grid-view">
       <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
         <div *ngFor="let track of paginatedTracks()" class="col">
-          <app-track-card
-            [track]="track"
-            [isPlaying]="currentPlayingId() === track.id && isPlaying()"
-            [isSelected]="selectedTracks().has(track.id)"
-            (play)="onPlayTrack(track)"
-            (pause)="onPauseTrack()"
-            (edit)="onEditTrack(track)"
-            (delete)="onDeleteTrack(track)"
-            (addToQueue)="onAddToQueue(track)"
-            (like)="onLikeTrack(track)"
-            (select)="onSelectTrack(track, $event)">
+          <app-track-card [track]="track" [isPlaying]="currentPlayingId() === track.id && isPlaying()"
+            [isSelected]="selectedTracks().has(track.id)" (play)="onPlayTrack(track)" (pause)="onPauseTrack()"
+            (edit)="onEditTrack(track)" (delete)="onDeleteTrack(track)" (addToQueue)="onAddToQueue(track)"
+            (like)="onLikeTrack(track)" (select)="onSelectTrack(track, $event)">
           </app-track-card>
         </div>
       </div>
@@ -272,120 +245,111 @@
       <div class="table-responsive">
         <table class="table table-hover">
           <thead>
-          <tr>
-            <th width="40">
-              <input type="checkbox"
-                     [checked]="selectedCount() === paginatedTracks().length"
-                     (change)="selectedCount() === paginatedTracks().length ? clearSelection() : selectAll()">
-            </th>
-            <th width="60"></th>
-            <th (click)="onSortChange(SortBy.TITLE)">
-              Titre
-              <i *ngIf="sortBy() === SortBy.TITLE"
-                 [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
-            </th>
-            <th (click)="onSortChange(SortBy.ARTIST)">
-              Artiste
-              <i *ngIf="sortBy() === SortBy.ARTIST"
-                 [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
-            </th>
-            <th (click)="onSortChange(SortBy.DATE)">
-              Date
-              <i *ngIf="sortBy() === SortBy.DATE"
-                 [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
-            </th>
-            <th (click)="onSortChange(SortBy.DURATION)">
-              Durée
-              <i *ngIf="sortBy() === SortBy.DURATION"
-                 [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
-            </th>
-            <th>Catégorie</th>
-            <th>Statistiques</th>
-            <th width="100">Actions</th>
-          </tr>
+            <tr>
+              <th width="40">
+                <input type="checkbox" [checked]="selectedCount() === paginatedTracks().length"
+                  (change)="selectedCount() === paginatedTracks().length ? clearSelection() : selectAll()">
+              </th>
+              <th width="60"></th>
+              <th (click)="onSortChange(SortBy.TITLE)">
+                Titre
+                <i *ngIf="sortBy() === SortBy.TITLE"
+                  [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
+              </th>
+              <th (click)="onSortChange(SortBy.ARTIST)">
+                Artiste
+                <i *ngIf="sortBy() === SortBy.ARTIST"
+                  [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
+              </th>
+              <th (click)="onSortChange(SortBy.DATE)">
+                Date
+                <i *ngIf="sortBy() === SortBy.DATE"
+                  [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
+              </th>
+              <th (click)="onSortChange(SortBy.DURATION)">
+                Durée
+                <i *ngIf="sortBy() === SortBy.DURATION"
+                  [class]="'bi bi-sort-' + (sortOrder() === 'asc' ? 'up' : 'down') + ' ms-1'"></i>
+              </th>
+              <th>Catégorie</th>
+              <th>Statistiques</th>
+              <th width="100">Actions</th>
+            </tr>
           </thead>
           <tbody>
-          <tr *ngFor="let track of paginatedTracks()"
-              [class.selected]="selectedTracks().has(track.id)"
-              [class.playing]="currentPlayingId() === track.id && isPlaying()"
-              (click)="onSelectTrack(track, $event)">
+            <tr *ngFor="let track of paginatedTracks()" [class.selected]="selectedTracks().has(track.id)"
+              [class.playing]="currentPlayingId() === track.id && isPlaying()" (click)="onSelectTrack(track, $event)">
 
-            <td>
-              <input type="checkbox"
-                     [checked]="selectedTracks().has(track.id)"
-                     (click)="$event.stopPropagation()"
-                     (change)="onSelectTrack(track, $event)">
-            </td>
+              <td>
+                <input type="checkbox" [checked]="selectedTracks().has(track.id)" (click)="$event.stopPropagation()"
+                  (change)="onSelectTrack(track, $event)">
+              </td>
 
-            <td>
-              <div class="table-cover">
-                <img [src]="track.coverImage || 'assets/images/default-cover.png'"
-                     [alt]="track.title">
-              </div>
-            </td>
-
-            <td>
-              <div class="table-track-info">
-                <div class="table-track-title">{{ track.title }}</div>
-                <div *ngIf="track.description" class="table-track-description small text-muted">
-                  {{ track.description | slice:0:50 }}{{ track.description.length > 50 ? '...' : '' }}
+              <td>
+                <div class="table-cover">
+                  <img [src]="track.coverImage | apiUrl" [alt]="track.title">
                 </div>
-              </div>
-            </td>
+              </td>
 
-            <td>{{ track.artist }}</td>
+              <td>
+                <div class="table-track-info">
+                  <div class="table-track-title">{{ track.title }}</div>
+                  <div *ngIf="track.description" class="table-track-description small text-muted">
+                    {{ track.description | slice:0:50 }}{{ track.description.length > 50 ? '...' : '' }}
+                  </div>
+                </div>
+              </td>
 
-            <td>
+              <td>{{ track.artist }}</td>
+
+              <td>
                 <span class="table-date">
                   {{ track.createdAt | date:'dd/MM/yyyy' }}
                 </span>
-            </td>
+              </td>
 
-            <td>
+              <td>
                 <span class="table-duration">
                   {{ track.duration | duration:'short' }}
                 </span>
-            </td>
+              </td>
 
-            <td>
+              <td>
                 <span class="badge bg-dark">
                   {{ track.category | titlecase }}
                 </span>
-            </td>
+              </td>
 
-            <td>
-              <div class="table-stats">
+              <td>
+                <div class="table-stats">
                   <span class="me-3" title="Lectures">
                     <i class="bi bi-play-fill me-1"></i>
                     {{ track.plays || 0 }}
                   </span>
-                <span title="Likes">
+                  <span title="Likes">
                     <i class="bi bi-heart me-1"></i>
-                  {{ track.likes || 0 }}
+                    {{ track.likes || 0 }}
                   </span>
-              </div>
-            </td>
+                </div>
+              </td>
 
-            <td>
-              <div class="table-actions" (click)="$event.stopPropagation()">
-                <button class="btn btn-sm btn-outline-primary me-1"
-                        (click)="onPlayTrack(track)"
-                        [title]="currentPlayingId() === track.id && isPlaying() ? 'Pause' : 'Lecture'">
-                  <i [class]="currentPlayingId() === track.id && isPlaying() ? 'bi bi-pause-fill' : 'bi bi-play-fill'"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-secondary me-1"
-                        (click)="onAddToQueue(track)"
-                        title="Ajouter à la file">
-                  <i class="bi bi-plus-circle"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger"
-                        (click)="onDeleteTrack(track)"
-                        title="Supprimer">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
-            </td>
-          </tr>
+              <td>
+                <div class="table-actions" (click)="$event.stopPropagation()">
+                  <button class="btn btn-sm btn-outline-primary me-1" (click)="onPlayTrack(track)"
+                    [title]="currentPlayingId() === track.id && isPlaying() ? 'Pause' : 'Lecture'">
+                    <i
+                      [class]="currentPlayingId() === track.id && isPlaying() ? 'bi bi-pause-fill' : 'bi bi-play-fill'"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-secondary me-1" (click)="onAddToQueue(track)"
+                    title="Ajouter à la file">
+                    <i class="bi bi-plus-circle"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger" (click)="onDeleteTrack(track)" title="Supprimer">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -401,9 +365,7 @@
             </a>
           </li>
 
-          <li *ngFor="let page of getPagesArray()"
-              class="page-item"
-              [class.active]="currentPage() + 1 === page">
+          <li *ngFor="let page of getPagesArray()" class="page-item" [class.active]="currentPage() + 1 === page">
             <a class="page-link" (click)="goToPage(page - 1)">
               {{ page }}
             </a>
@@ -463,12 +425,10 @@
           <h6 class="stats-card-title">Par catégorie</h6>
           <div class="categories-stats">
             <ng-container *ngFor="let category of categories()">
-              <div *ngIf="category !== 'all' && stats().byCategory[category]"
-                   class="category-stat">
+              <div *ngIf="category !== 'all' && stats().byCategory[category]" class="category-stat">
                 <div class="category-name">{{ category | titlecase }}</div>
                 <div class="category-bar">
-                  <div class="bar-fill"
-                       [style.width.%]="(stats().byCategory[category] / stats().totalTracks) * 100">
+                  <div class="bar-fill" [style.width.%]="(stats().byCategory[category] / stats().totalTracks) * 100">
                   </div>
                 </div>
                 <div class="category-count">{{ stats().byCategory[category] }}</div>
@@ -521,12 +481,8 @@
             Importez des données depuis un fichier JSON
           </p>
           <div class="file-input-wrapper">
-            <input type="file"
-                   id="importFile"
-                   class="form-control"
-                   accept=".json,application/json"
-                   (change)="onImportFileSelected($event)"
-                   hidden>
+            <input type="file" id="importFile" class="form-control" accept=".json,application/json"
+              (change)="onImportFileSelected($event)" hidden>
             <label for="importFile" class="btn btn-outline-secondary w-100">
               <i class="bi bi-upload me-2"></i>
               Choisir un fichier

@@ -13,6 +13,7 @@ import { DurationPipe } from '../../shared/pipes/duration-pipe';
 import { FileSizePipe } from '../../shared/pipes/file-size-pipe';
 import { SearchFilterPipe } from '../../shared/pipes/search-filter-pipe';
 import { DragDropDirective } from '../../shared/directives/drag-drop';
+import { ApiUrlPipe } from '../../shared/pipes/api-url.pipe';
 import { AppState } from '../../core/store/app.state';
 import * as TrackActions from '../../core/store/track/track.actions';
 import * as TrackSelectors from '../../core/store/track/track.selectors';
@@ -28,7 +29,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     TrackCardComponent,
     TrackFormComponent,
     DurationPipe,
-    DragDropDirective
+    DragDropDirective,
+    ApiUrlPipe
   ],
   templateUrl: './library.html',
   styleUrls: ['./library.css']

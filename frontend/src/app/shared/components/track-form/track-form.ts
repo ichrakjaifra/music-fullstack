@@ -6,11 +6,12 @@ import { Track, MusicCategory } from '../../../core/models/track.model';
 import { DragDropDirective } from '../../directives/drag-drop';
 import { TitleCasePipe } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ApiUrlPipe } from '../../pipes/api-url.pipe';
 
 @Component({
   selector: 'app-track-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DragDropDirective, TitleCasePipe],
+  imports: [CommonModule, ReactiveFormsModule, DragDropDirective, TitleCasePipe, ApiUrlPipe],
   templateUrl: './track-form.html',
   styleUrls: ['./track-form.css']
 })

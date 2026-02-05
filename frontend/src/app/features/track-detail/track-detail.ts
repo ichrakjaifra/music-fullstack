@@ -9,11 +9,12 @@ import { AudioPlayerService } from '../../core/services/audio-player.service';
 import { DurationPipe } from '../../shared/pipes/duration-pipe';
 import { FileSizePipe } from '../../shared/pipes/file-size-pipe';
 import { TrackApiService } from '../../core/services/track-api.service';
+import { ApiUrlPipe } from '../../shared/pipes/api-url.pipe';
 
 @Component({
   selector: 'app-track-detail',
   standalone: true,
-  imports: [CommonModule, DurationPipe, FileSizePipe],
+  imports: [CommonModule, DurationPipe, FileSizePipe, ApiUrlPipe],
   templateUrl: './track-detail.html',
   styleUrls: ['./track-detail.css']
 })

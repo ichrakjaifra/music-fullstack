@@ -5,15 +5,13 @@
       {{ isEditing ? 'Modifier la piste' : 'Ajouter une nouvelle piste' }}
     </h4>
     <p class="text-muted mb-0 small">
-      {{ isEditing ? 'Mettez à jour les informations de votre piste' : 'Remplissez les informations de votre nouvelle piste' }}
+      {{ isEditing ? 'Mettez à jour les informations de votre piste' : 'Remplissez les informations de votre nouvelle
+      piste' }}
     </p>
   </div>
 
-  <div class="drop-zone mb-4"
-       appDragDrop
-       (filesDropped)="onFilesDropped($event)"
-       (dragOver)="onDragOver($event)"
-       [class.dragging]="isDragging()">
+  <div class="drop-zone mb-4" appDragDrop (filesDropped)="onFilesDropped($event)" (dragOver)="onDragOver($event)"
+    [class.dragging]="isDragging()">
 
     <div class="drop-zone-content text-center py-5">
       <i class="bi bi-cloud-upload display-4 text-muted mb-3"></i>
@@ -23,24 +21,16 @@
       </p>
       <div class="d-flex justify-content-center gap-3">
         <div class="file-input-wrapper">
-          <input type="file"
-                 id="audioFile"
-                 class="file-input"
-                 accept=".mp3,.wav,.ogg,.m4a,audio/*"
-                 (change)="onAudioSelected($event)"
-                 hidden>
+          <input type="file" id="audioFile" class="file-input" accept=".mp3,.wav,.ogg,.m4a,audio/*"
+            (change)="onAudioSelected($event)" hidden>
           <label for="audioFile" class="btn btn-outline-primary cursor-pointer">
             <i class="bi bi-music-note-beamed me-2"></i>
             Ajouter Audio
           </label>
         </div>
         <div class="file-input-wrapper">
-          <input type="file"
-                 id="imageFile"
-                 class="file-input"
-                 accept=".jpg,.jpeg,.png,.webp,image/*"
-                 (change)="onImageSelected($event)"
-                 hidden>
+          <input type="file" id="imageFile" class="file-input" accept=".jpg,.jpeg,.png,.webp,image/*"
+            (change)="onImageSelected($event)" hidden>
           <label for="imageFile" class="btn btn-outline-secondary cursor-pointer">
             <i class="bi bi-image me-2"></i>
             Ajouter Image
@@ -77,9 +67,7 @@
             </div>
           </div>
           <div class="col-md-6 text-end">
-            <button type="button"
-                    class="btn btn-sm btn-outline-danger"
-                    (click)="removeAudio()">
+            <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeAudio()">
               <i class="bi bi-trash me-1"></i> Supprimer
             </button>
           </div>
@@ -97,17 +85,12 @@
         <div class="row align-items-center">
           <div class="col-md-6">
             <div class="image-preview-container">
-              <img [src]="imagePreviewUrl()!"
-                   alt="Preview"
-                   class="img-thumbnail"
-                   style="width: 80px; height: 80px; object-fit: cover;"
-                   (error)="removeImage()">
+              <img [src]="imagePreviewUrl()! | apiUrl" alt="Preview" class="img-thumbnail"
+                style="width: 80px; height: 80px; object-fit: cover;" (error)="removeImage()">
             </div>
           </div>
           <div class="col-md-6 text-end">
-            <button type="button"
-                    class="btn btn-sm btn-outline-danger"
-                    (click)="removeImage()">
+            <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeImage()">
               <i class="bi bi-trash me-1"></i> Supprimer
             </button>
           </div>
@@ -132,12 +115,8 @@
         <i class="bi bi-music-note me-2"></i>
         Titre *
       </label>
-      <input type="text"
-             id="title"
-             class="form-control"
-             formControlName="title"
-             [class]="getFieldClass('title')"
-             placeholder="Nom de la chanson">
+      <input type="text" id="title" class="form-control" formControlName="title" [class]="getFieldClass('title')"
+        placeholder="Nom de la chanson">
       <div class="form-text d-flex justify-content-between">
         <span class="text-danger small" *ngIf="getFieldError('title')">
           {{ getFieldError('title') }}
@@ -153,12 +132,8 @@
         <i class="bi bi-person me-2"></i>
         Artiste *
       </label>
-      <input type="text"
-             id="artist"
-             class="form-control"
-             formControlName="artist"
-             [class]="getFieldClass('artist')"
-             placeholder="Nom de l'artiste">
+      <input type="text" id="artist" class="form-control" formControlName="artist" [class]="getFieldClass('artist')"
+        placeholder="Nom de l'artiste">
       <div class="form-text d-flex justify-content-between">
         <span class="text-danger small" *ngIf="getFieldError('artist')">
           {{ getFieldError('artist') }}
@@ -174,12 +149,8 @@
         <i class="bi bi-chat-left-text me-2"></i>
         Description
       </label>
-      <textarea id="description"
-                class="form-control"
-                formControlName="description"
-                [class]="getFieldClass('description')"
-                rows="2"
-                placeholder="Description optionnelle..."></textarea>
+      <textarea id="description" class="form-control" formControlName="description"
+        [class]="getFieldClass('description')" rows="2" placeholder="Description optionnelle..."></textarea>
       <div class="form-text d-flex justify-content-between">
         <span class="text-danger small" *ngIf="getFieldError('description')">
           {{ getFieldError('description') }}
@@ -195,10 +166,7 @@
         <i class="bi bi-tags me-2"></i>
         Catégorie *
       </label>
-      <select id="category"
-              class="form-select"
-              formControlName="category"
-              [class]="getFieldClass('category')">
+      <select id="category" class="form-select" formControlName="category" [class]="getFieldClass('category')">
         <option value="" disabled>Sélectionnez une catégorie</option>
         <option *ngFor="let cat of categories" [value]="cat">
           {{ cat | titlecase }}
@@ -219,15 +187,11 @@
     </div>
 
     <div class="form-buttons d-flex gap-3">
-      <button type="button"
-              class="btn btn-outline-secondary px-4"
-              (click)="onCancel()">
+      <button type="button" class="btn btn-outline-secondary px-4" (click)="onCancel()">
         Annuler
       </button>
 
-      <button type="submit"
-              class="btn btn-primary px-4"
-              [disabled]="trackForm.invalid || !audioFile()">
+      <button type="submit" class="btn btn-primary px-4" [disabled]="trackForm.invalid || !audioFile()">
         <i class="bi bi-{{ isEditing ? 'check-lg' : 'plus-lg' }} me-2"></i>
         {{ isEditing ? 'Mettre à jour' : 'Ajouter la piste' }}
       </button>

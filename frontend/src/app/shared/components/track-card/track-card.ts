@@ -6,11 +6,12 @@ import { AudioPlayerService } from '../../../core/services/audio-player.service'
 import { TrackService } from '../../../core/services/track.service';
 import { DurationPipe } from '../../pipes/duration-pipe';
 import { FileSizePipe } from '../../pipes/file-size-pipe';
+import { ApiUrlPipe } from '../../pipes/api-url.pipe';
 
 @Component({
   selector: 'app-track-card',
   standalone: true,
-  imports: [CommonModule, DurationPipe, FileSizePipe],
+  imports: [CommonModule, DurationPipe, FileSizePipe, ApiUrlPipe],
   templateUrl: './track-card.html',
   styleUrls: ['./track-card.css']
 })
